@@ -23,6 +23,9 @@ def main():
     # Start command
     subparsers.add_parser("start", help="Start real-time monitoring engine in foreground")
 
+    # GUI Desktop App command
+    subparsers.add_parser("gui", help="Launch standalone DuckyGuard Desktop Application")
+
     # Tray command
     subparsers.add_parser("tray", help="Launch native macOS Menu Bar application")
 
@@ -51,12 +54,13 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == "start" or args.command is None:
-        if args.command is None and len(sys.argv) > 1:
-            parser.print_help()
-            sys.exit(1)
+    if args.command == "start":
         engine = DuckyGuardEngine()
         engine.start(blocking=True)
+
+    elif args.command == "gui" or args.command is None:
+        from .desktop_app import launch_desktop
+        launch_desktop()
 
     elif args.command == "tray":
         from .tray_app import launch_tray
