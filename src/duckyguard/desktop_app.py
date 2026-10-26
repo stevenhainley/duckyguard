@@ -1,8 +1,8 @@
 """
 DuckyGuard - Native macOS Desktop Application
-A standalone GUI dashboard for real-time HID injection monitoring,
-hardware bus forensics, attack simulation, and incident triage.
-Designed to sh. industries standards: dark matte obsidian & cyber amber.
+Theme: Modern Light Creme-Orange (Award-Winning Aesthetic)
+Built to sh. industries standards: warm luxury paper, cyber orange accents,
+crisp typography, and tactile security controls.
 """
 
 import glob
@@ -22,26 +22,33 @@ from .simulator import BadUSBSimulator
 
 class DuckyGuardDesktopApp:
     """
-    Main Desktop Application GUI for DuckyGuard.
+    Modern Light-Theme Desktop Dashboard for DuckyGuard.
     """
 
-    # sh. industries Cyber Amber palette
-    BG_DARK = "#0E0E0D"
-    PANEL_BG = "#1A1A17"
-    PANEL_BORDER = "#2B2A26"
-    ACCENT_AMBER = "#FF7A00"
-    ACCENT_AMBER_HOT = "#FFA31A"
-    ACCENT_GREEN = "#10B981"
-    ACCENT_RED = "#EF4444"
-    TEXT_PAPER = "#F7F6F1"
-    TEXT_MUTED = "#85827A"
+    # Light Creme Orange Design Palette (Linear / Apple Design Award vibe)
+    BG_CREME = "#FAF5EE"          # Warm luxurious creme canvas
+    PANEL_WHITE = "#FFFFFF"       # Raised card surfaces
+    PANEL_BORDER = "#EFE5D8"      # Subtle warm divider line
+    PANEL_HOVER = "#F5ECE1"       # Subtle hover state
+    TEXT_INK = "#1C1917"          # Rich stone ink for ultra-crisp typography
+    TEXT_MUTED = "#78716C"        # Warm stone secondary label
+    TEXT_FAINT = "#A8A29E"        # Light neutral captions
+
+    # Accent Colors
+    ACCENT_ORANGE = "#FF6B00"     # Cyberpunk signature orange
+    ACCENT_ORANGE_HOT = "#FF8533" # Hover / glowing orange
+    ACCENT_ORANGE_TINT = "#FFF0E5"# Soft peach/creme badge background
+    ACCENT_MINT = "#059669"       # Fresh emerald green for armed status
+    ACCENT_MINT_TINT = "#ECFDF5"  # Soft mint background
+    ACCENT_RED = "#DC2626"        # Alert red
+    ACCENT_RED_TINT = "#FEF2F2"   # Soft red background
 
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("DuckyGuard — Physical HID Injection Defense")
-        self.root.geometry("980x640+140+100")
-        self.root.configure(bg=self.BG_DARK)
-        self.root.minsize(860, 560)
+        self.root.geometry("1020x680+120+80")
+        self.root.configure(bg=self.BG_CREME)
+        self.root.minsize(900, 600)
 
         # Base directories
         self.base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -49,154 +56,175 @@ class DuckyGuardDesktopApp:
         self.reports_dir = os.path.join(self.base_dir, "reports")
         self.captures_dir = os.path.join(self.base_dir, "captures")
 
-        # Initialize engines
+        # Initialize core engines
         self.engine = DuckyGuardEngine(base_dir=self.base_dir)
         self.simulator = BadUSBSimulator()
 
-        # Engine starts in background
+        # Engine runs in background
         threading.Thread(target=self.engine.start, kwargs={"blocking": False}, daemon=True).start()
 
-        # Keep mascot photo reference
+        # Keep mascot image reference
         self.mascot_photo: Optional[ImageTk.PhotoImage] = None
 
         # State tracking
         self.current_tab = "monitor"
         self._running = True
 
-        # Build UI
-        self._build_header()
-        self._build_body()
+        # Build UI layout
+        self._build_top_nav()
+        self._build_main_container()
 
-        # Telemetry Polling Thread
+        # Telemetry worker thread
         self.poll_thread = threading.Thread(target=self._telemetry_worker, daemon=True)
         self.poll_thread.start()
 
-        # Handle window close
+        # Clean exit
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
-    def _build_header(self):
-        """Top Header Bar with Brand, Pixel Mascot, and Engine Arming Toggle."""
-        header = tk.Frame(self.root, bg=self.PANEL_BG, height=72, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        header.pack(fill="x", side="top")
+    def _build_top_nav(self):
+        """Top Brand Header with Cute Pixel Mascot and System Controls."""
+        header_wrap = tk.Frame(self.root, bg=self.PANEL_WHITE, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        header_wrap.pack(fill="x", side="top")
 
-        left_box = tk.Frame(header, bg=self.PANEL_BG, padx=16, pady=10)
+        header = tk.Frame(header_wrap, bg=self.PANEL_WHITE, padx=24, pady=14)
+        header.pack(fill="x")
+
+        # Left: Mascot + Brand
+        left_box = tk.Frame(header, bg=self.PANEL_WHITE)
         left_box.pack(side="left")
 
-        # Pixel Mascot
-        sprite_path = os.path.join(self.assets_dir, "ducky_pixel_sprite.png")
+        # Cute Cyber Mascot Icon in Squircle Pill
+        sprite_path = os.path.join(self.assets_dir, "ducky_pixel_cute.png")
+        if not os.path.exists(sprite_path):
+            sprite_path = os.path.join(self.assets_dir, "ducky_pixel_sprite.png")
+
         if os.path.exists(sprite_path):
             try:
                 raw_img = Image.open(sprite_path).convert("RGBA")
-                raw_img = raw_img.resize((48, 48), Image.NEAREST)
+                raw_img = raw_img.resize((44, 44), Image.NEAREST)
                 self.mascot_photo = ImageTk.PhotoImage(raw_img)
-                mascot_lbl = tk.Label(left_box, image=self.mascot_photo, bg=self.PANEL_BG)
-                mascot_lbl.pack(side="left", padx=(0, 14))
+                mascot_badge = tk.Label(
+                    left_box,
+                    image=self.mascot_photo,
+                    bg=self.ACCENT_ORANGE_TINT,
+                    padx=6,
+                    pady=6,
+                    highlightthickness=1,
+                    highlightbackground="#FED7AA",
+                )
+                mascot_badge.pack(side="left", padx=(0, 14))
             except Exception:
                 pass
 
-        title_box = tk.Frame(left_box, bg=self.PANEL_BG)
+        title_box = tk.Frame(left_box, bg=self.PANEL_WHITE)
         title_box.pack(side="left")
 
-        kicker = tk.Label(
+        eyebrow = tk.Label(
             title_box,
-            text="SH. INDUSTRIES // PHYSICAL ENDPOINT DEFENSE",
-            fg=self.ACCENT_AMBER,
-            bg=self.PANEL_BG,
+            text="SH. INDUSTRIES // ENDPOINT SECURITY",
+            fg=self.ACCENT_ORANGE,
+            bg=self.PANEL_WHITE,
             font=("Menlo", 9, "bold"),
         )
-        kicker.pack(anchor="w")
+        eyebrow.pack(anchor="w")
 
-        title = tk.Label(
-            title_box,
-            text="DUCKYGUARD",
-            fg=self.TEXT_PAPER,
-            bg=self.PANEL_BG,
-            font=("Helvetica", 18, "bold"),
+        title_row = tk.Frame(title_box, bg=self.PANEL_WHITE)
+        title_row.pack(anchor="w")
+
+        app_name = tk.Label(
+            title_row,
+            text="DuckyGuard",
+            fg=self.TEXT_INK,
+            bg=self.PANEL_WHITE,
+            font=("Helvetica", 19, "bold"),
         )
-        title.pack(anchor="w")
+        app_name.pack(side="left")
 
-        # Right Header: Status + Toggle
-        right_box = tk.Frame(header, bg=self.PANEL_BG, padx=20, pady=12)
+        version_chip = tk.Label(
+            title_row,
+            text="v1.0",
+            fg=self.TEXT_MUTED,
+            bg=self.PANEL_HOVER,
+            font=("Helvetica", 9, "bold"),
+            padx=6,
+            pady=2,
+        )
+        version_chip.pack(side="left", padx=(8, 0))
+
+        # Right: Arm/Disarm Controls & Status Pill
+        right_box = tk.Frame(header, bg=self.PANEL_WHITE)
         right_box.pack(side="right")
 
         self.status_pill = tk.Label(
             right_box,
-            text="● ARMED & MONITORING",
-            fg=self.ACCENT_GREEN,
-            bg="#064e3b",
+            text="● SHIELD ARMED",
+            fg=self.ACCENT_MINT,
+            bg=self.ACCENT_MINT_TINT,
             font=("Menlo", 10, "bold"),
-            padx=12,
-            pady=6,
+            padx=14,
+            pady=7,
+            highlightthickness=1,
+            highlightbackground="#A7F3D0",
         )
-        self.status_pill.pack(side="left", padx=(0, 12))
+        self.status_pill.pack(side="left", padx=(0, 14))
 
         self.toggle_btn = tk.Button(
             right_box,
             text="Disarm",
             command=self._toggle_engine,
-            fg=self.TEXT_PAPER,
-            bg=self.PANEL_BORDER,
-            activebackground=self.PANEL_BG,
+            fg=self.TEXT_INK,
+            bg=self.BG_CREME,
+            activebackground=self.PANEL_BORDER,
             font=("Helvetica", 11, "bold"),
             relief="flat",
-            padx=14,
-            pady=4,
+            padx=16,
+            pady=6,
             cursor="pointinghand",
+            highlightthickness=1,
+            highlightbackground=self.PANEL_BORDER,
         )
         self.toggle_btn.pack(side="left")
 
-    def _build_body(self):
-        """Build Main Content with Navigation Sidebar and Tab Views."""
-        container = tk.Frame(self.root, bg=self.BG_DARK)
-        container.pack(fill="both", expand=True)
+    def _build_main_container(self):
+        """Build Navigation Tabs and Card Content Area."""
+        body = tk.Frame(self.root, bg=self.BG_CREME, padx=32, pady=24)
+        body.pack(fill="both", expand=True)
 
-        # Sidebar
-        sidebar = tk.Frame(container, bg=self.PANEL_BG, width=180, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        sidebar.pack(fill="y", side="left")
-        sidebar.pack_propagate(False)
-
-        nav_title = tk.Label(
-            sidebar,
-            text="CONSOLE",
-            fg=self.TEXT_MUTED,
-            bg=self.PANEL_BG,
-            font=("Menlo", 9, "bold"),
-            padx=16,
-            pady=16,
-        )
-        nav_title.pack(anchor="w")
+        # Tab Navigation Pill Bar
+        nav_bar = tk.Frame(body, bg=self.BG_CREME)
+        nav_bar.pack(fill="x", pady=(0, 20))
 
         self.nav_btns = {}
-        tabs = [
-            ("monitor", "🛡 Live Monitor"),
-            ("vault", "📂 Incident Vault"),
-            ("hardware", "🔌 USB Bus"),
-            ("simulator", "⚡ Attack Lab"),
+        tab_defs = [
+            ("monitor", "🛡  Live Monitor"),
+            ("vault", "📂  Incident Vault"),
+            ("hardware", "🔌  USB Bus Forensics"),
+            ("simulator", "⚡  Attack Simulator Lab"),
         ]
 
-        for tab_id, tab_label in tabs:
+        for tab_id, tab_label in tab_defs:
             btn = tk.Button(
-                sidebar,
+                nav_bar,
                 text=tab_label,
                 command=lambda t=tab_id: self._switch_tab(t),
-                fg=self.TEXT_PAPER,
-                bg=self.PANEL_BG,
-                activebackground=self.PANEL_BORDER,
-                font=("Helvetica", 12),
+                fg=self.TEXT_MUTED,
+                bg=self.PANEL_WHITE,
+                activebackground=self.ACCENT_ORANGE_TINT,
+                font=("Helvetica", 11, "bold"),
                 relief="flat",
-                anchor="w",
                 padx=16,
-                pady=10,
+                pady=8,
                 cursor="pointinghand",
+                highlightthickness=1,
+                highlightbackground=self.PANEL_BORDER,
             )
-            btn.pack(fill="x")
+            btn.pack(side="left", padx=(0, 10))
             self.nav_btns[tab_id] = btn
 
-        # Main Dynamic View
-        self.view_container = tk.Frame(container, bg=self.BG_DARK, padx=24, pady=20)
-        self.view_container.pack(fill="both", expand=True, side="right")
+        # Tab Content Container
+        self.view_container = tk.Frame(body, bg=self.BG_CREME)
+        self.view_container.pack(fill="both", expand=True)
 
-        # Initialize tab frames
         self.views = {
             "monitor": self._build_monitor_view(),
             "vault": self._build_vault_view(),
@@ -207,121 +235,130 @@ class DuckyGuardDesktopApp:
         self._switch_tab("monitor")
 
     def _build_monitor_view(self) -> tk.Frame:
-        """Dashboard view: live telemetry cards and real-time stats."""
-        frame = tk.Frame(self.view_container, bg=self.BG_DARK)
+        """Dashboard view with 3 clean metrics cards and live telemetry."""
+        frame = tk.Frame(self.view_container, bg=self.BG_CREME)
 
-        lbl = tk.Label(frame, text="Live Endpoint Telemetry", fg=self.TEXT_PAPER, bg=self.BG_DARK, font=("Helvetica", 16, "bold"))
-        lbl.pack(anchor="w", pady=(0, 16))
+        # 3 Top Metric Cards
+        cards_row = tk.Frame(frame, bg=self.BG_CREME)
+        cards_row.pack(fill="x", pady=(0, 20))
 
-        # 3 Metrics Cards Grid
-        cards_frame = tk.Frame(frame, bg=self.BG_DARK)
-        cards_frame.pack(fill="x", pady=(0, 20))
+        # Card 1: Keystrokes
+        c1 = tk.Frame(cards_row, bg=self.PANEL_WHITE, padx=20, pady=18, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        c1.pack(side="left", fill="both", expand=True, padx=(0, 14))
+        tk.Label(c1, text="KEYSTROKES INSPECTED", fg=self.TEXT_MUTED, bg=self.PANEL_WHITE, font=("Menlo", 9, "bold")).pack(anchor="w")
+        self.lbl_keys_count = tk.Label(c1, text="0", fg=self.TEXT_INK, bg=self.PANEL_WHITE, font=("Helvetica", 32, "bold"))
+        self.lbl_keys_count.pack(anchor="w", pady=(8, 2))
+        tk.Label(c1, text="Real-time event stream", fg=self.TEXT_FAINT, bg=self.PANEL_WHITE, font=("Helvetica", 10)).pack(anchor="w")
 
-        # Card 1: Keys Analyzed
-        c1 = tk.Frame(cards_frame, bg=self.PANEL_BG, padx=16, pady=16, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        c1.pack(side="left", fill="both", expand=True, padx=(0, 10))
-        tk.Label(c1, text="KEYSTROKES INSPECTED", fg=self.TEXT_MUTED, bg=self.PANEL_BG, font=("Menlo", 9, "bold")).pack(anchor="w")
-        self.lbl_keys_count = tk.Label(c1, text="0", fg=self.TEXT_PAPER, bg=self.PANEL_BG, font=("Helvetica", 28, "bold"))
-        self.lbl_keys_count.pack(anchor="w", pady=(6, 0))
+        # Card 2: Attacks Neutralized
+        c2 = tk.Frame(cards_row, bg=self.PANEL_WHITE, padx=20, pady=18, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        c2.pack(side="left", fill="both", expand=True, padx=(0, 14))
+        tk.Label(c2, text="ATTACKS NEUTRALIZED", fg=self.ACCENT_ORANGE, bg=self.PANEL_WHITE, font=("Menlo", 9, "bold")).pack(anchor="w")
+        self.lbl_attacks_count = tk.Label(c2, text="0", fg=self.ACCENT_ORANGE, bg=self.PANEL_WHITE, font=("Helvetica", 32, "bold"))
+        self.lbl_attacks_count.pack(anchor="w", pady=(8, 2))
+        tk.Label(c2, text="Trapped in Decoy Sink", fg=self.TEXT_FAINT, bg=self.PANEL_WHITE, font=("Helvetica", 10)).pack(anchor="w")
 
-        # Card 2: Attacks Blocked
-        c2 = tk.Frame(cards_frame, bg=self.PANEL_BG, padx=16, pady=16, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        c2.pack(side="left", fill="both", expand=True, padx=5)
-        tk.Label(c2, text="ATTACKS NEUTRALIZED", fg=self.TEXT_MUTED, bg=self.PANEL_BG, font=("Menlo", 9, "bold")).pack(anchor="w")
-        self.lbl_attacks_count = tk.Label(c2, text="0", fg=self.ACCENT_AMBER_HOT, bg=self.PANEL_BG, font=("Helvetica", 28, "bold"))
-        self.lbl_attacks_count.pack(anchor="w", pady=(6, 0))
+        # Card 3: USB HID Hardware
+        c3 = tk.Frame(cards_row, bg=self.PANEL_WHITE, padx=20, pady=18, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        c3.pack(side="left", fill="both", expand=True)
+        tk.Label(c3, text="ACTIVE HID DEVICES", fg=self.ACCENT_MINT, bg=self.PANEL_WHITE, font=("Menlo", 9, "bold")).pack(anchor="w")
+        self.lbl_hid_count = tk.Label(c3, text="1", fg=self.ACCENT_MINT, bg=self.PANEL_WHITE, font=("Helvetica", 32, "bold"))
+        self.lbl_hid_count.pack(anchor="w", pady=(8, 2))
+        tk.Label(c3, text="IOKit bus enumeration", fg=self.TEXT_FAINT, bg=self.PANEL_WHITE, font=("Helvetica", 10)).pack(anchor="w")
 
-        # Card 3: Connected Keyboards
-        c3 = tk.Frame(cards_frame, bg=self.PANEL_BG, padx=16, pady=16, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        c3.pack(side="left", fill="both", expand=True, padx=(10, 0))
-        tk.Label(c3, text="ACTIVE USB HID DEVICES", fg=self.TEXT_MUTED, bg=self.PANEL_BG, font=("Menlo", 9, "bold")).pack(anchor="w")
-        self.lbl_hid_count = tk.Label(c3, text="1", fg=self.ACCENT_GREEN, bg=self.PANEL_BG, font=("Helvetica", 28, "bold"))
-        self.lbl_hid_count.pack(anchor="w", pady=(6, 0))
+        # Telemetry & Status Container
+        console_card = tk.Frame(frame, bg=self.PANEL_WHITE, padx=22, pady=20, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        console_card.pack(fill="both", expand=True)
 
-        # Live Dynamics Box
-        dynamics_panel = tk.Frame(frame, bg=self.PANEL_BG, padx=20, pady=18, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        dynamics_panel.pack(fill="both", expand=True)
+        top_info = tk.Frame(console_card, bg=self.PANEL_WHITE)
+        top_info.pack(fill="x", pady=(0, 12))
 
-        tk.Label(dynamics_panel, text="ACTIVE DEFENSE STATUS & HEURISTICS", fg=self.ACCENT_AMBER, bg=self.PANEL_BG, font=("Menlo", 10, "bold")).pack(anchor="w", pady=(0, 10))
+        tk.Label(top_info, text="REAL-TIME DEFENSE ENGINE HEURISTICS", fg=self.TEXT_INK, bg=self.PANEL_WHITE, font=("Helvetica", 13, "bold")).pack(side="left")
+        tk.Label(top_info, text="Sampling at 1,000 Hz", fg=self.TEXT_MUTED, bg=self.PANEL_WHITE, font=("Menlo", 9)).pack(side="right")
 
+        # Dark Slate Terminal inside clean white card
         self.telemetry_log = tk.Text(
-            dynamics_panel,
-            bg="#0A0A09",
+            console_card,
+            bg="#18181B",
             fg="#4ADE80",
+            insertbackground="#38BDF8",
             font=("Menlo", 11),
             relief="flat",
-            padx=12,
-            pady=12,
-            height=10,
+            padx=14,
+            pady=14,
+            height=12,
         )
         self.telemetry_log.pack(fill="both", expand=True)
         self.telemetry_log.insert(tk.END, "[*] DuckyGuard Real-Time Protection Daemon active.\n")
-        self.telemetry_log.insert(tk.END, "[*] Monitoring IOKit USB bus for HID enumeration events...\n")
-        self.telemetry_log.insert(tk.END, "[*] Keystroke dynamics engine running (Sliding window = 12 keys).\n")
-        self.telemetry_log.insert(tk.END, "[*] Threshold: 20 chars/sec velocity, < 12ms jitter standard deviation.\n")
+        self.telemetry_log.insert(tk.END, "[*] Monitoring macOS IOKit USB bus for HID keyboard connections...\n")
+        self.telemetry_log.insert(tk.END, "[*] Keystroke dynamics sliding buffer initialized (12-event window).\n")
+        self.telemetry_log.insert(tk.END, "[*] Heuristics: Velocity > 20 cps  |  Jitter std-dev < 12ms  |  USB correlation <= 5s.\n")
+        self.telemetry_log.insert(tk.END, "[*] Status: ZERO UNTRUSTED KEYSTROKES DETECTED.\n")
         self.telemetry_log.config(state="disabled")
 
         return frame
 
     def _build_vault_view(self) -> tk.Frame:
-        """Incident Vault: view intercepted attacks, forensic reports, and YARA rules."""
-        frame = tk.Frame(self.view_container, bg=self.BG_DARK)
+        """Incident Response Vault: review captured payloads, IOCs, and YARA rules."""
+        frame = tk.Frame(self.view_container, bg=self.BG_CREME)
 
-        top_box = tk.Frame(frame, bg=self.BG_DARK)
-        top_box.pack(fill="x", pady=(0, 12))
+        # Header with Finder action
+        head = tk.Frame(frame, bg=self.BG_CREME)
+        head.pack(fill="x", pady=(0, 14))
 
-        tk.Label(top_box, text="Incident Response Vault", fg=self.TEXT_PAPER, bg=self.BG_DARK, font=("Helvetica", 16, "bold")).pack(side="left")
+        tk.Label(head, text="Forensic Incident Vault", fg=self.TEXT_INK, bg=self.BG_CREME, font=("Helvetica", 15, "bold")).pack(side="left")
 
-        open_folder_btn = tk.Button(
-            top_box,
-            text="📂 Open Reports Folder",
+        open_btn = tk.Button(
+            head,
+            text="📂 Open Reports in Finder",
             command=lambda: subprocess.run(["open", self.reports_dir]),
-            fg=self.TEXT_PAPER,
-            bg=self.PANEL_BG,
-            font=("Helvetica", 10),
+            fg=self.TEXT_INK,
+            bg=self.PANEL_WHITE,
+            font=("Helvetica", 10, "bold"),
             relief="flat",
-            padx=10,
-            pady=4,
+            padx=14,
+            pady=6,
             cursor="pointinghand",
+            highlightthickness=1,
+            highlightbackground=self.PANEL_BORDER,
         )
-        open_folder_btn.pack(side="right")
+        open_btn.pack(side="right")
 
-        # Split pane: Reports List on left, Report Viewer on right
-        panes = tk.Frame(frame, bg=self.BG_DARK)
-        panes.pack(fill="both", expand=True)
+        # Split Card: Left List, Right Viewer
+        vault_card = tk.Frame(frame, bg=self.PANEL_WHITE, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        vault_card.pack(fill="both", expand=True)
 
-        # Left Reports Listbox
-        list_box = tk.Frame(panes, bg=self.PANEL_BG, width=260, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        list_box.pack(side="left", fill="y", padx=(0, 12))
-        list_box.pack_propagate(False)
+        left_list_frame = tk.Frame(vault_card, bg="#FBF8F4", width=280, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        left_list_frame.pack(side="left", fill="y")
+        left_list_frame.pack_propagate(False)
 
-        tk.Label(list_box, text="INTERCEPTED INCIDENTS", fg=self.TEXT_MUTED, bg=self.PANEL_BG, font=("Menlo", 9, "bold"), padx=10, pady=10).pack(anchor="w")
+        tk.Label(left_list_frame, text="CAPTURED ATTACKS", fg=self.TEXT_MUTED, bg="#FBF8F4", font=("Menlo", 9, "bold"), padx=14, pady=12).pack(anchor="w")
 
         self.reports_listbox = tk.Listbox(
-            list_box,
-            bg=self.PANEL_BG,
-            fg=self.TEXT_PAPER,
-            selectbackground=self.ACCENT_AMBER,
-            selectforeground=self.BG_DARK,
+            left_list_frame,
+            bg="#FBF8F4",
+            fg=self.TEXT_INK,
+            selectbackground=self.ACCENT_ORANGE,
+            selectforeground="#FFFFFF",
             font=("Menlo", 10),
             relief="flat",
             highlightthickness=0,
         )
-        self.reports_listbox.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        self.reports_listbox.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         self.reports_listbox.bind("<<ListboxSelect>>", self._on_select_report)
 
-        # Right Content Area
-        preview_box = tk.Frame(panes, bg=self.PANEL_BG, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        preview_box.pack(side="right", fill="both", expand=True)
+        # Right Preview Area
+        preview_frame = tk.Frame(vault_card, bg=self.PANEL_WHITE)
+        preview_frame.pack(side="right", fill="both", expand=True)
 
         self.report_preview_text = tk.Text(
-            preview_box,
-            bg="#0A0A09",
-            fg=self.TEXT_PAPER,
+            preview_frame,
+            bg=self.PANEL_WHITE,
+            fg=self.TEXT_INK,
             font=("Menlo", 11),
             relief="flat",
-            padx=14,
-            pady=14,
+            padx=18,
+            pady=18,
         )
         self.report_preview_text.pack(fill="both", expand=True)
 
@@ -329,22 +366,22 @@ class DuckyGuardDesktopApp:
         return frame
 
     def _build_hardware_view(self) -> tk.Frame:
-        """Hardware Bus view: table of connected USB and HID devices."""
-        frame = tk.Frame(self.view_container, bg=self.BG_DARK)
+        """Hardware Bus view: live table of connected USB and HID devices."""
+        frame = tk.Frame(self.view_container, bg=self.BG_CREME)
 
-        tk.Label(frame, text="Connected USB & HID Devices", fg=self.TEXT_PAPER, bg=self.BG_DARK, font=("Helvetica", 16, "bold")).pack(anchor="w", pady=(0, 12))
+        tk.Label(frame, text="Active USB & HID Hardware Bus", fg=self.TEXT_INK, bg=self.BG_CREME, font=("Helvetica", 15, "bold")).pack(anchor="w", pady=(0, 14))
 
-        table_box = tk.Frame(frame, bg=self.PANEL_BG, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        table_box.pack(fill="both", expand=True)
+        card = tk.Frame(frame, bg=self.PANEL_WHITE, padx=20, pady=20, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        card.pack(fill="both", expand=True)
 
         self.hw_text = tk.Text(
-            table_box,
-            bg="#0A0A09",
-            fg="#38BDF8",
+            card,
+            bg=self.PANEL_WHITE,
+            fg=self.TEXT_INK,
             font=("Menlo", 11),
             relief="flat",
-            padx=14,
-            pady=14,
+            padx=10,
+            pady=10,
         )
         self.hw_text.pack(fill="both", expand=True)
 
@@ -352,83 +389,86 @@ class DuckyGuardDesktopApp:
         return frame
 
     def _build_simulator_view(self) -> tk.Frame:
-        """Attack Simulation Lab: test defense mechanisms without physical hardware."""
-        frame = tk.Frame(self.view_container, bg=self.BG_DARK)
+        """Attack Simulation Lab."""
+        frame = tk.Frame(self.view_container, bg=self.BG_CREME)
 
-        tk.Label(frame, text="Synthetic BadUSB Attack Lab", fg=self.TEXT_PAPER, bg=self.BG_DARK, font=("Helvetica", 16, "bold")).pack(anchor="w", pady=(0, 8))
+        tk.Label(frame, text="Synthetic Attack Simulation Lab", fg=self.TEXT_INK, bg=self.BG_CREME, font=("Helvetica", 15, "bold")).pack(anchor="w", pady=(0, 4))
         tk.Label(
             frame,
-            text="Simulate micro-controller keystroke injection to verify DuckyGuard's focus-stealing Decoy Sink in real time.",
+            text="Inject synthetic BadUSB keystroke streams to verify DuckyGuard's focus-stealing Decoy Sink in real time.",
             fg=self.TEXT_MUTED,
-            bg=self.BG_DARK,
-            font=("Helvetica", 12),
-        ).pack(anchor="w", pady=(0, 20))
+            bg=self.BG_CREME,
+            font=("Helvetica", 11),
+        ).pack(anchor="w", pady=(0, 18))
 
-        lab_box = tk.Frame(frame, bg=self.PANEL_BG, padx=20, pady=20, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
-        lab_box.pack(fill="both", expand=True)
+        card = tk.Frame(frame, bg=self.PANEL_WHITE, padx=24, pady=20, highlightthickness=1, highlightbackground=self.PANEL_BORDER)
+        card.pack(fill="both", expand=True)
 
-        # Preset 1: Resume Dropper
+        # Simulation Row 1
         self._create_sim_row(
-            lab_box,
-            title="1. Flipper Zero BadUSB (Resume Dropper Payload)",
-            subtitle="Types at ~80 chars/sec with 12ms uniform microcontroller jitter.",
+            card,
+            title="1. Flipper Zero BadUSB (Resume Dropper Script)",
+            subtitle="Fires ~80 chars/second with 12ms uniform microcontroller timing intervals.",
             command_func=lambda: self._trigger_sim("resume_dropper", is_badusb=True),
             btn_text="Launch Attack Test",
-            btn_color=self.ACCENT_AMBER,
+            btn_bg=self.ACCENT_ORANGE,
+            btn_fg="#FFFFFF",
         )
 
-        # Preset 2: Reverse Shell
+        # Simulation Row 2
         self._create_sim_row(
-            lab_box,
-            title="2. Reverse Shell Injector (Linux / macOS Dropper)",
-            subtitle="Injects bash network socket commands directly into the terminal stream.",
+            card,
+            title="2. Reverse Shell Dropper (macOS / Linux)",
+            subtitle="Simulates automated bash command socket payloads targeting port 4444.",
             command_func=lambda: self._trigger_sim("reverse_shell", is_badusb=True),
             btn_text="Launch Attack Test",
-            btn_color=self.ACCENT_RED,
+            btn_bg="#EA580C",
+            btn_fg="#FFFFFF",
         )
 
-        # Preset 3: Benign Human
+        # Simulation Row 3
         self._create_sim_row(
-            lab_box,
-            title="3. Benign Human Baseline (Zero False-Positive Verification)",
-            subtitle="Simulates a human typing at natural speeds (150-240ms intervals with high jitter).",
+            card,
+            title="3. Benign Human Baseline (Zero False-Positive Check)",
+            subtitle="Simulates natural human typing speeds (120-220ms per key) with high timing jitter.",
             command_func=lambda: self._trigger_sim("benign_human", is_badusb=False),
-            btn_text="Test Human Typing",
-            btn_color=self.ACCENT_GREEN,
+            btn_text="Verify Human Typing",
+            btn_bg=self.ACCENT_MINT_TINT,
+            btn_fg=self.ACCENT_MINT,
         )
 
         return frame
 
-    def _create_sim_row(self, parent, title: str, subtitle: str, command_func, btn_text: str, btn_color: str):
-        row = tk.Frame(parent, bg=self.PANEL_BG, pady=12)
+    def _create_sim_row(self, parent, title: str, subtitle: str, command_func, btn_text: str, btn_bg: str, btn_fg: str):
+        row = tk.Frame(parent, bg=self.PANEL_WHITE, pady=14)
         row.pack(fill="x", pady=6)
 
-        info = tk.Frame(row, bg=self.PANEL_BG)
+        info = tk.Frame(row, bg=self.PANEL_WHITE)
         info.pack(side="left")
 
-        tk.Label(info, text=title, fg=self.TEXT_PAPER, bg=self.PANEL_BG, font=("Helvetica", 13, "bold")).pack(anchor="w")
-        tk.Label(info, text=subtitle, fg=self.TEXT_MUTED, bg=self.PANEL_BG, font=("Helvetica", 11)).pack(anchor="w")
+        tk.Label(info, text=title, fg=self.TEXT_INK, bg=self.PANEL_WHITE, font=("Helvetica", 13, "bold")).pack(anchor="w")
+        tk.Label(info, text=subtitle, fg=self.TEXT_MUTED, bg=self.PANEL_WHITE, font=("Helvetica", 11)).pack(anchor="w")
 
         btn = tk.Button(
             row,
             text=btn_text,
             command=command_func,
-            fg="#0E0E0D",
-            bg=btn_color,
-            activebackground=btn_color,
+            fg=btn_fg,
+            bg=btn_bg,
+            activebackground=self.ACCENT_ORANGE_HOT,
             font=("Helvetica", 11, "bold"),
             relief="flat",
-            padx=16,
-            pady=6,
+            padx=18,
+            pady=8,
             cursor="pointinghand",
         )
         btn.pack(side="right")
 
     def _trigger_sim(self, preset_name: str, is_badusb: bool):
         messagebox.showinfo(
-            "Simulation Armed",
+            "Attack Simulation Armed",
             f"Simulation '{preset_name}' will fire in 3 seconds.\n\n"
-            "DuckyGuard's Decoy Sink will intercept and redirect the stream!"
+            "DuckyGuard's focus-stealing Decoy Sink will intercept and quarantine the stream!"
         )
         threading.Thread(
             target=self.simulator.run_simulation,
@@ -443,9 +483,9 @@ class DuckyGuardDesktopApp:
 
         for tid, btn in self.nav_btns.items():
             if tid == tab_id:
-                btn.configure(bg=self.PANEL_BORDER, fg=self.ACCENT_AMBER)
+                btn.configure(bg=self.ACCENT_ORANGE_TINT, fg=self.ACCENT_ORANGE, highlightbackground="#FED7AA")
             else:
-                btn.configure(bg=self.PANEL_BG, fg=self.TEXT_PAPER)
+                btn.configure(bg=self.PANEL_WHITE, fg=self.TEXT_MUTED, highlightbackground=self.PANEL_BORDER)
 
         self.views[tab_id].pack(fill="both", expand=True)
 
@@ -457,11 +497,21 @@ class DuckyGuardDesktopApp:
     def _toggle_engine(self):
         if self.engine._running:
             self.engine.stop()
-            self.status_pill.config(text="● DISARMED", fg=self.ACCENT_RED, bg="#450a0a")
-            self.toggle_btn.config(text="Arm Engine")
+            self.status_pill.config(
+                text="● SHIELD DISARMED",
+                fg=self.ACCENT_RED,
+                bg=self.ACCENT_RED_TINT,
+                highlightbackground="#FECACA",
+            )
+            self.toggle_btn.config(text="Arm Shield")
         else:
             threading.Thread(target=self.engine.start, kwargs={"blocking": False}, daemon=True).start()
-            self.status_pill.config(text="● ARMED & MONITORING", fg=self.ACCENT_GREEN, bg="#064e3b")
+            self.status_pill.config(
+                text="● SHIELD ARMED",
+                fg=self.ACCENT_MINT,
+                bg=self.ACCENT_MINT_TINT,
+                highlightbackground="#A7F3D0",
+            )
             self.toggle_btn.config(text="Disarm")
 
     def _refresh_vault_list(self):
@@ -496,20 +546,19 @@ class DuckyGuardDesktopApp:
         devices = self.engine.usb_watcher._get_current_hid_devices()
         self.hw_text.config(state="normal")
         self.hw_text.delete("1.0", tk.END)
-        self.hw_text.insert(tk.END, f"{'VENDOR ID':<12} {'PRODUCT ID':<12} {'DEVICE NAME':<35}\n")
-        self.hw_text.insert(tk.END, "="*65 + "\n")
+        self.hw_text.insert(tk.END, f"{'VENDOR ID':<14} {'PRODUCT ID':<14} {'DEVICE NAME':<35}\n")
+        self.hw_text.insert(tk.END, "─"*65 + "\n")
 
         for dev_sig in sorted(devices):
             parts = dev_sig.split(":", 2)
             vid = parts[0] if len(parts) > 0 else "N/A"
             pid = parts[1] if len(parts) > 1 else "N/A"
             name = parts[2] if len(parts) > 2 else "Unknown HID"
-            self.hw_text.insert(tk.END, f"{vid:<12} {pid:<12} {name:<35}\n")
+            self.hw_text.insert(tk.END, f"{vid:<14} {pid:<14} {name:<35}\n")
 
         self.hw_text.config(state="disabled")
 
     def _telemetry_worker(self):
-        """Polls engine statistics and updates UI counters."""
         while self._running:
             keys = self.engine.detector.total_keys_inspected
             blocked = self.engine.detector.anomalies_detected
