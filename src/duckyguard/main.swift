@@ -35,7 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.minSize = NSSize(width: 860, height: 560)
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.backgroundColor = NSColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1.0) // Creme background
+        window.backgroundColor = NSColor(red: 0.973, green: 0.976, blue: 0.980, alpha: 1.0) // Modern stone/snow canvas
 
         webView = WKWebView(frame: window.contentView!.bounds, configuration: config)
         webView.autoresizingMask = [.width, .height]

@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>DuckyGuard — Physical HID Injection Defense</title>
   <style>
-    /* DuckyGuard · Hallmark Design System (sh. industries standard)
-     * Macrostructure: Desktop Mission Console · Tone: Foreman-plain, technical restraint
-     * Palette: Warm Paper #FAF5EE, Pure Surface #FFFFFF, Aegis Orange #FF6B00, Shield Gold #FFA31A
-     * Typography: Funnel Display + Funnel Sans, Silkscreen/Mono Eyebrows (brand/PIXEL_THEME.md)
-     * Dither: 4x4 Bayer pattern, 3px cells at 2-3% opacity
+    /* DuckyGuard · Stripe + Robinhood + SHOP + sh. industries Hallmark Design System
+     * Tone: Fintech Precision, Awwwards Site of the Year, High-Trust Security
+     * Surfaces: Frosted Glass, Hairline Glass Borders, Deep Stone Typography, Cyber Orange Accent
+     * Fonts: Funnel Display + Funnel Sans (sh. industries) + Apple SF Pro
      */
     @font-face {
       font-family: "Funnel Display";
@@ -43,51 +42,56 @@
     }
 
     :root {
-      /* sh. industries light palette adapted for DuckyGuard */
-      --bg: #FAF5EE;
+      /* Stripe / Robinhood / SHOP High-Trust Palette */
+      --bg: #F8F9FA;
+      --bg-mesh: radial-gradient(at 0% 0%, rgba(255, 107, 0, 0.05) 0px, transparent 50%),
+                 radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
+                 #F8F9FA;
       --surface: #FFFFFF;
-      --surface-2: #F5EFE6;
-      --surface-3: #EBE3D7;
-      --line: #EFE5D8;
-      --line-strong: #D6C9B8;
-      --text: #1C1917;
-      --text-2: #57534E;
-      --text-3: #78716C;
-      --text-faint: #A8A29E;
+      --surface-glass: rgba(255, 255, 255, 0.85);
+      --surface-subtle: #F1F3F5;
+      --surface-dark: #0D0E11;
+      --surface-dark-glass: rgba(13, 14, 17, 0.85);
 
-      /* Signature Aegis Orange & Shield Amber */
-      --orange: #FF6B00;
-      --orange-ink: #2A1000;
-      --orange-text: #FF7A1A;
-      --orange-dim: rgba(255, 107, 0, 0.12);
-      --amber: #FFA31A;
-      --amber-dim: rgba(255, 163, 26, 0.15);
+      /* Precision Hairlines */
+      --border: rgba(0, 0, 0, 0.07);
+      --border-subtle: rgba(0, 0, 0, 0.04);
+      --border-dark: rgba(255, 255, 255, 0.1);
 
-      /* Telemetry Accents */
-      --green: #059669;
-      --green-dim: rgba(5, 150, 105, 0.12);
-      --red: #DC2626;
-      --red-dim: rgba(220, 38, 38, 0.12);
+      /* Typography */
+      --text: #090A0C;
+      --text-muted: #5E6470;
+      --text-subtle: #8A92A0;
 
-      --shadow: 0 16px 48px rgba(28, 25, 23, 0.05);
-      --shadow-sm: 0 2px 8px rgba(28, 25, 23, 0.04);
-      --fd: "Funnel Display", "SF Pro Display", system-ui, sans-serif;
-      --fs: "Funnel Sans", -apple-system, system-ui, sans-serif;
+      /* Signature Brand Gradients & Accents (Stripe / Robinhood Ember) */
+      --orange: #FF5500;
+      --orange-hot: #FF6B00;
+      --orange-light: #FFF2EB;
+      --orange-gradient: linear-gradient(135deg, #FF5500 0%, #FF8A00 100%);
+      --emerald: #00C805; /* Robinhood Green */
+      --emerald-tint: #E6F9E6;
+      --crimson: #FF3B30;
+      --crimson-tint: #FEECEB;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+      --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+      --shadow-lg: 0 20px 40px -8px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.02);
+
+      /* Fonts */
+      --fd: "Funnel Display", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      --fs: "Funnel Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
       --fpx: ui-monospace, "SF Mono", Menlo, monospace;
-      --r: 12px;
-      --r-lg: 16px;
-
-      /* 4x4 Bayer dither tile (PIXEL_THEME device 4) */
-      --dither: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cg fill='%231c1917'%3E%3Crect x='0' y='0' width='3' height='3' opacity='.03'/%3E%3Crect x='6' y='6' width='3' height='3' opacity='.03'/%3E%3Crect x='6' y='0' width='3' height='3' opacity='.015'/%3E%3Crect x='0' y='6' width='3' height='3' opacity='.015'/%3E%3C/g%3E%3C/svg%3E");
+      --r: 10px;
+      --r-lg: 18px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-text-size-adjust: 100%; }
     body {
-      background: var(--bg);
-      background-image: var(--dither);
+      background: var(--bg-mesh);
       color: var(--text);
-      font: 400 14px/1.55 var(--fs);
+      font: 400 14px/1.5 var(--fs);
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -96,183 +100,190 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Native Titlebar Drag Header */
-    .titlebar {
-      height: 76px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--line);
+    /* Stripe/Arc-Style Floating Frosted Glass Header */
+    .app-header {
+      height: 74px;
+      background: var(--surface-glass);
+      backdrop-filter: blur(24px) saturate(190%);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 24px 0 84px; /* Space for macOS native traffic lights */
+      padding: 0 28px 0 88px; /* Native traffic lights spacing */
       -webkit-app-region: drag;
       flex-shrink: 0;
-      position: relative;
+      z-index: 50;
     }
 
-    .brand-wrap {
+    .brand-meta {
       display: flex;
       align-items: center;
       gap: 14px;
     }
 
-    /* Aegis Ducky Mascot Squircle */
-    .mascot-box {
-      width: 48px;
-      height: 48px;
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: var(--r);
+    /* Stripe-Tier App Emblem */
+    .brand-emblem {
+      width: 44px;
+      height: 44px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(255, 85, 0, 0.12);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      transition: transform 200ms cubic-bezier(.2,0,0,1);
-      -webkit-app-region: no-drag;
       cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      -webkit-app-region: no-drag;
     }
-    .mascot-box:hover {
-      transform: scale(1.06) rotate(-2deg);
-      border-color: var(--orange);
+    .brand-emblem:hover {
+      transform: scale(1.06);
     }
-    .mascot-box img {
-      width: 40px;
-      height: 40px;
-      image-rendering: pixelated;
+    .brand-emblem img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
     }
 
-    .brand-text {
+    .brand-titles {
       display: flex;
       flex-direction: column;
     }
 
-    .brand-kicker {
+    .kicker {
       font-family: var(--fpx);
       font-size: 10px;
       font-weight: 700;
       color: var(--orange);
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
-    .brand-title-row {
+    .brand-name-row {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 8px;
     }
 
-    .brand-title {
+    .brand-name {
       font-family: var(--fd);
       font-size: 20px;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
       color: var(--text);
     }
 
-    .brand-by {
-      font-family: var(--fpx);
-      font-size: 10px;
-      color: var(--text-3);
-      letter-spacing: 0.04em;
+    .badge-company {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--surface-subtle);
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
     }
 
-    /* Right Action Pill & Toggle */
-    .action-group {
+    /* Robinhood-Style Status Pill & Controls */
+    .header-actions {
       display: flex;
       align-items: center;
       gap: 12px;
       -webkit-app-region: no-drag;
     }
 
-    .status-pill {
+    .radar-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--emerald-tint);
+      color: var(--emerald);
+      border: 1px solid rgba(0, 200, 5, 0.25);
+      padding: 6px 14px;
+      border-radius: 999px;
       font-family: var(--fpx);
       font-size: 11px;
       font-weight: 700;
-      color: var(--green);
-      background: var(--green-dim);
-      border: 1px solid rgba(5, 150, 105, 0.25);
-      padding: 6px 14px;
-      border-radius: 999px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
     }
 
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      background: var(--green);
+    .radar-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--emerald);
       border-radius: 50%;
-      box-shadow: 0 0 8px rgba(5, 150, 105, 0.5);
-      animation: pulse 2s infinite ease-in-out;
+      box-shadow: 0 0 10px rgba(0, 200, 5, 0.8);
+      animation: pulse-glow 2s infinite ease-in-out;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.35; transform: scale(0.85); }
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.85); opacity: 0.4; }
     }
 
-    .btn-action {
+    .btn-toggle-switch {
       background: var(--surface);
+      border: 1px solid var(--border);
       color: var(--text);
-      border: 1px solid var(--line);
       padding: 7px 18px;
       font: 600 12px/1 var(--fs);
-      border-radius: var(--r);
+      border-radius: 999px;
       cursor: pointer;
       box-shadow: var(--shadow-sm);
-      transition: all 180ms cubic-bezier(.2,0,0,1);
+      transition: all 0.15s ease;
     }
-    .btn-action:hover {
-      background: var(--surface-2);
+    .btn-toggle-switch:hover {
+      background: var(--surface-subtle);
       border-color: var(--orange);
       color: var(--orange);
     }
 
-    /* Main Workspace */
-    .workspace {
+    /* Workspace */
+    .app-workspace {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 24px 32px 32px;
+      padding: 24px 36px 36px;
       overflow: hidden;
     }
 
-    /* Hallmark Navigation Bar */
-    .tab-bar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
+    /* Segmented Navigation (Stripe / Apple / SHOP Style) */
+    .nav-segmented {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      align-self: flex-start;
     }
 
-    .tab-item {
-      background: var(--surface);
-      color: var(--text-2);
-      border: 1px solid var(--line);
+    .nav-item {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
       padding: 8px 18px;
       font: 600 12px/1 var(--fs);
-      border-radius: var(--r);
+      border-radius: 8px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: all 160ms cubic-bezier(.2,0,0,1);
-      box-shadow: var(--shadow-sm);
+      transition: all 0.18s cubic-bezier(0.2, 0, 0, 1);
     }
-    .tab-item:hover {
+    .nav-item:hover {
       color: var(--text);
-      background: var(--surface-2);
     }
-    .tab-item.active {
-      background: var(--orange-dim);
-      color: var(--orange);
-      border-color: var(--orange);
+    .nav-item.active {
+      background: var(--text);
+      color: #FFFFFF;
       font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     }
 
-    /* Views */
+    /* View Panes */
     .view-pane {
       flex: 1;
       overflow-y: auto;
@@ -281,116 +292,147 @@
     .view-pane.active {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 22px;
     }
 
-    /* 3-Card Metrics Telemetry */
-    .metrics-row {
+    /* Robinhood Financials / Stripe Radar Metrics Grid */
+    .metrics-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      gap: 18px;
     }
 
-    .telemetry-card {
+    .metric-box {
       background: var(--surface);
-      border: 1px solid var(--line);
+      border: 1px solid var(--border);
       border-radius: var(--r-lg);
-      padding: 22px 24px;
-      box-shadow: var(--shadow);
+      padding: 24px 28px;
+      box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
       position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .metric-box:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
     }
 
-    .card-kicker {
+    .metric-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .metric-title {
       font-family: var(--fpx);
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      color: var(--text-3);
-      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 10px;
     }
 
-    .card-num {
+    .metric-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .chip-green { background: var(--emerald-tint); color: var(--emerald); }
+    .chip-orange { background: var(--orange-light); color: var(--orange); }
+
+    .metric-hero {
       font-family: var(--fd);
-      font-size: 38px;
+      font-size: 42px;
       font-weight: 800;
       color: var(--text);
-      letter-spacing: -0.03em;
+      letter-spacing: -0.04em;
       line-height: 1;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
-    .card-sub {
+    .metric-foot {
       font-size: 12px;
-      color: var(--text-faint);
+      color: var(--text-subtle);
     }
 
-    /* Primary Console Frame */
-    .console-frame {
+    /* Live Sparkline Visual Effect */
+    .sparkline-decor {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* Stripe Workbench Container */
+    .workbench-card {
       background: var(--surface);
-      border: 1px solid var(--line);
+      border: 1px solid var(--border);
       border-radius: var(--r-lg);
-      padding: 24px;
-      box-shadow: var(--shadow);
+      padding: 26px 28px;
+      box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
       flex: 1;
     }
 
-    .frame-head {
+    .card-head-row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
-    .frame-title {
+    .card-heading {
       font-family: var(--fd);
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 17px;
+      font-weight: 800;
       color: var(--text);
+      letter-spacing: -0.02em;
     }
 
-    .frame-subtitle {
+    .card-subtext {
       font-size: 12px;
-      color: var(--text-3);
+      color: var(--text-muted);
     }
 
-    /* Telemetry Dark Box */
-    .telemetry-screen {
-      background: #161614;
+    /* Linear CLI Dark Terminal Console */
+    .linear-console {
+      background: var(--surface-dark);
       color: #34D399;
-      border-radius: var(--r);
-      padding: 16px 20px;
+      border: 1px solid var(--border-dark);
+      border-radius: 14px;
+      padding: 18px 22px;
       font-family: var(--fpx);
       font-size: 12px;
-      line-height: 1.65;
+      line-height: 1.7;
       flex: 1;
       overflow-y: auto;
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
     }
 
-    .stream-info { color: #A8A69F; }
-    .stream-alert { color: var(--amber); }
-    .stream-danger { color: #F87171; font-weight: 700; }
-    .stream-ok { color: #34D399; font-weight: 700; }
+    .stream-dim { color: #71717A; }
+    .stream-amber { color: #F59E0B; }
+    .stream-danger { color: #EF4444; font-weight: 700; }
+    .stream-success { color: #34D399; font-weight: 700; }
 
-    /* Vault Split Pane */
-    .vault-layout {
+    /* Vault Split Workbench */
+    .vault-workbench {
       display: grid;
-      grid-template-columns: 290px 1fr;
-      gap: 16px;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
       flex: 1;
-      min-height: 380px;
+      min-height: 400px;
     }
 
-    .record-list {
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: var(--r);
+    .incident-feed {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       padding: 10px;
       overflow-y: auto;
       display: flex;
@@ -398,227 +440,261 @@
       gap: 6px;
     }
 
-    .record-entry {
+    .incident-tile {
       background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
       cursor: pointer;
-      transition: all 160ms cubic-bezier(.2,0,0,1);
-    }
-    .record-entry:hover {
-      border-color: var(--orange);
-      background: var(--orange-dim);
-    }
-    .record-entry.selected {
-      border-color: var(--orange);
-      background: var(--orange-dim);
-    }
-
-    .record-title {
-      font-family: var(--fpx);
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .record-date {
-      font-size: 11px;
-      color: var(--text-3);
-      margin-top: 2px;
-    }
-
-    .record-viewer {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--r);
-      padding: 22px;
-      overflow-y: auto;
-      font-family: var(--fpx);
-      font-size: 12px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-
-    /* Attack Lab */
-    .lab-card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--r);
-      padding: 18px 22px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      transition: all 160ms cubic-bezier(.2,0,0,1);
-    }
-    .lab-card:hover {
-      border-color: var(--line-strong);
+      transition: all 0.15s ease;
       box-shadow: var(--shadow-sm);
     }
+    .incident-tile:hover {
+      border-color: var(--orange);
+      transform: translateX(2px);
+    }
+    .incident-tile.selected {
+      border-color: var(--orange);
+      background: var(--orange-light);
+    }
 
-    .lab-title {
-      font-family: var(--fd);
-      font-size: 15px;
+    .incident-title {
+      font-family: var(--fpx);
+      font-size: 12px;
       font-weight: 700;
       color: var(--text);
     }
-    .lab-desc {
-      font-size: 12px;
-      color: var(--text-3);
+    .incident-meta {
+      font-size: 11px;
+      color: var(--text-muted);
       margin-top: 3px;
     }
 
-    .btn-fire {
-      background: var(--orange);
+    .incident-preview {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      overflow-y: auto;
+      font-family: var(--fpx);
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    /* Threat Simulation Cards (Stripe Test Suite Style) */
+    .sim-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sim-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .sim-row:hover {
+      box-shadow: var(--shadow-md);
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .sim-name {
+      font-family: var(--fd);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .sim-spec {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .btn-fire-test {
+      background: var(--orange-gradient);
       color: #FFFFFF;
       border: none;
-      padding: 9px 20px;
+      padding: 10px 22px;
       font: 700 12px/1 var(--fs);
-      border-radius: var(--r);
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 160ms cubic-bezier(.2,0,0,1);
-      box-shadow: 0 4px 14px rgba(255, 107, 0, 0.25);
+      box-shadow: 0 4px 14px rgba(255, 85, 0, 0.28);
+      transition: all 0.15s ease;
     }
-    .btn-fire:hover {
-      background: var(--orange-ink);
+    .btn-fire-test:hover {
       transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(255, 85, 0, 0.38);
     }
-    .btn-fire.secondary {
-      background: var(--surface-2);
+    .btn-fire-test.secondary {
+      background: var(--surface-subtle);
       color: var(--text);
-      border: 1px solid var(--line);
+      border: 1px solid var(--border);
       box-shadow: none;
     }
-    .btn-fire.secondary:hover {
-      background: var(--green-dim);
-      color: var(--green);
-      border-color: rgba(5, 150, 105, 0.3);
+    .btn-fire-test.secondary:hover {
+      background: var(--emerald-tint);
+      color: var(--emerald);
+      border-color: rgba(0, 200, 5, 0.3);
     }
 
     /* Hardware Table */
-    .hw-table {
+    .hardware-table {
       width: 100%;
       border-collapse: collapse;
       font-family: var(--fpx);
       font-size: 12px;
     }
-    .hw-table th {
+    .hardware-table th {
       text-align: left;
-      padding: 12px 16px;
-      background: var(--surface-2);
-      color: var(--text-3);
-      border-bottom: 1px solid var(--line);
+      padding: 12px 18px;
+      background: var(--surface-subtle);
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
       font-size: 11px;
       letter-spacing: 0.08em;
     }
-    .hw-table td {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
+    .hardware-table td {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border-subtle);
       color: var(--text);
     }
   </style>
 </head>
 <body>
 
-  <!-- Native Titlebar Drag Header -->
-  <header class="titlebar">
-    <div class="brand-wrap">
-      <div class="mascot-box">
-        <img src="/assets/ducky_pixel_cute.png" alt="Aegis Ducky">
+  <!-- Stripe-Grade Frosted Glass Header -->
+  <header class="app-header">
+    <div class="brand-meta">
+      <div class="brand-emblem">
+        <img src="/assets/logo.png" alt="DuckyGuard Vector Emblem">
       </div>
-      <div class="brand-text">
-        <span class="brand-kicker">SH. INDUSTRIES // PHYSICAL ENDPOINT DEFENSE</span>
-        <div class="brand-title-row">
-          <span class="brand-title">DuckyGuard</span>
-          <span class="brand-by">by sh. industries</span>
+      <div class="brand-titles">
+        <span class="kicker">SH. INDUSTRIES // PHYSICAL ENDPOINT DEFENSE</span>
+        <div class="brand-name-row">
+          <span class="brand-name">DuckyGuard</span>
+          <span class="badge-company">A product by sh. industries</span>
         </div>
       </div>
     </div>
 
-    <div class="action-group">
-      <div class="status-pill" id="statusPill">
-        <div class="pulse-dot" id="statusDot"></div>
+    <div class="header-actions">
+      <div class="radar-pill" id="statusPill">
+        <div class="radar-dot" id="statusDot"></div>
         <span id="statusText">SHIELD ARMED</span>
       </div>
-      <button class="btn-action" id="btnToggle" onclick="toggleEngine()">Disarm</button>
+      <button class="btn-toggle-switch" id="btnToggle" onclick="toggleEngine()">Disarm</button>
     </div>
   </header>
 
-  <!-- Main Workspace -->
-  <main class="workspace">
-    <!-- Hallmark Navigation Bar -->
-    <nav class="tab-bar">
-      <button class="tab-item active" onclick="switchTab('monitor')">🛡  Live Monitor</button>
-      <button class="tab-item" onclick="switchTab('vault')">📂  Incident Vault</button>
-      <button class="tab-item" onclick="switchTab('hardware')">🔌  USB Bus Forensics</button>
-      <button class="tab-item" onclick="switchTab('simulator')">⚡  Attack Simulator Lab</button>
+  <!-- Workspace -->
+  <main class="app-workspace">
+    <!-- Segmented Navigation Control -->
+    <nav class="nav-segmented">
+      <button class="nav-item active" onclick="switchTab('monitor')">🛡  Live Monitor</button>
+      <button class="nav-item" onclick="switchTab('vault')">📂  Incident Vault</button>
+      <button class="nav-item" onclick="switchTab('hardware')">🔌  USB Hardware Bus</button>
+      <button class="nav-item" onclick="switchTab('simulator')">⚡  Attack Simulation Lab</button>
     </nav>
 
     <!-- Tab 1: Live Monitor -->
     <section class="view-pane active" id="view-monitor">
-      <div class="metrics-row">
-        <div class="telemetry-card">
-          <span class="card-kicker">Keystrokes Inspected</span>
-          <span class="card-num" id="valKeys">0</span>
-          <span class="card-sub">CoreGraphics user-space event tap</span>
+      <div class="metrics-grid">
+        <!-- Metric 1 -->
+        <div class="metric-box">
+          <div class="metric-label-row">
+            <span class="metric-title">Keystrokes Inspected</span>
+            <span class="metric-chip chip-green">Active Tap</span>
+          </div>
+          <span class="metric-hero" id="valKeys">0</span>
+          <span class="metric-foot">Real-time user-space CoreGraphics event tap</span>
+          <!-- Subtle Robinhood Wave Graph SVG -->
+          <svg class="sparkline-decor" width="80" height="35" viewBox="0 0 80 35" fill="none">
+            <path d="M0 25 C 20 28, 40 10, 60 18 S 75 5, 80 8" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+          </svg>
         </div>
-        <div class="telemetry-card">
-          <span class="card-kicker">Attacks Neutralized</span>
-          <span class="card-num" id="valAttacks" style="color: var(--orange);">0</span>
-          <span class="card-sub">Preempted in Decoy Quarantine Sink</span>
+
+        <!-- Metric 2 -->
+        <div class="metric-box">
+          <div class="metric-label-row">
+            <span class="metric-title">Attacks Neutralized</span>
+            <span class="metric-chip chip-orange">100% Sunk</span>
+          </div>
+          <span class="metric-hero" id="valAttacks" style="color: var(--orange);">0</span>
+          <span class="metric-foot">Preempted & quarantined in Decoy Sink</span>
+          <svg class="sparkline-decor" width="80" height="35" viewBox="0 0 80 35" fill="none">
+            <path d="M0 30 C 25 30, 45 15, 65 15 S 75 5, 80 5" stroke="#FF5500" stroke-width="3" stroke-linecap="round"/>
+          </svg>
         </div>
-        <div class="telemetry-card">
-          <span class="card-kicker">Active USB Keyboards</span>
-          <span class="card-num" id="valDevices" style="color: var(--green);">1</span>
-          <span class="card-sub">IOKit Host Controller bus</span>
+
+        <!-- Metric 3 -->
+        <div class="metric-box">
+          <div class="metric-label-row">
+            <span class="metric-title">Active HID Keyboards</span>
+            <span class="metric-chip chip-green">IOKit Bus</span>
+          </div>
+          <span class="metric-hero" id="valDevices" style="color: var(--emerald);">1</span>
+          <span class="metric-foot">Hardware controller connection registry</span>
+          <svg class="sparkline-decor" width="80" height="35" viewBox="0 0 80 35" fill="none">
+            <path d="M0 20 C 30 20, 50 20, 80 20" stroke="#059669" stroke-width="3" stroke-linecap="round"/>
+          </svg>
         </div>
       </div>
 
-      <div class="console-frame">
-        <div class="frame-head">
-          <div class="frame-title">Real-Time Defense Heuristics & Telemetry Stream</div>
-          <div class="frame-subtitle">Sliding-window velocity & biometric jitter analysis</div>
+      <!-- Linear / Stripe Style Real-Time Workbench -->
+      <div class="workbench-card">
+        <div class="card-head-row">
+          <div>
+            <div class="card-heading">Real-Time Defense Heuristics & Telemetry Stream</div>
+            <div class="card-subtext">Sliding-window velocity & biometric timing jitter analysis</div>
+          </div>
         </div>
 
-        <div class="telemetry-screen" id="terminalLog">
-          <div class="stream-ok">[*] DuckyGuard Real-Time Protection Daemon active.</div>
-          <div class="stream-info">[*] Monitoring macOS IOKit USB bus for HID keyboard connections...</div>
-          <div class="stream-info">[*] Heuristic parameters: Velocity > 20 cps | Jitter < 12ms | USB attachment <= 5s.</div>
-          <div class="stream-info">[*] WindowServer preemption armed: Decoy sink captures input within 100ms.</div>
-          <div class="stream-ok">[✓] Endpoint secure. Zero unauthorized HID injection attacks detected.</div>
+        <div class="linear-console" id="terminalLog">
+          <div class="stream-success">[*] DuckyGuard Real-Time Protection Daemon active.</div>
+          <div class="stream-dim">[*] Monitoring macOS IOKit USB bus for HID keyboard connections...</div>
+          <div class="stream-dim">[*] Heuristic parameters: Velocity > 20 cps | Jitter < 12ms | USB attachment <= 5s.</div>
+          <div class="stream-dim">[*] WindowServer preemption armed: Decoy sink captures input within 100ms.</div>
+          <div class="stream-success">[✓] Endpoint secure. Zero unauthorized HID injection attacks detected.</div>
         </div>
       </div>
     </section>
 
     <!-- Tab 2: Incident Vault -->
     <section class="view-pane" id="view-vault">
-      <div class="console-frame">
-        <div class="frame-head">
+      <div class="workbench-card">
+        <div class="card-head-row">
           <div>
-            <div class="frame-title">Forensic Incident Vault</div>
-            <div class="frame-subtitle">Review intercepted payloads, extracted IOCs, and synthesized YARA rules</div>
+            <div class="card-heading">Forensic Incident Vault</div>
+            <div class="card-subtext">Review intercepted payloads, extracted IOCs, and synthesized YARA rules</div>
           </div>
-          <button class="btn-action" onclick="openReportsFolder()">📂 Open Reports in Finder</button>
+          <button class="btn-toggle-switch" onclick="openReportsFolder()">📂 Open Reports in Finder</button>
         </div>
 
-        <div class="vault-layout">
-          <div class="record-list" id="incidentList"></div>
-          <div class="record-viewer" id="incidentViewer">Select an incident from the list to inspect forensic triage details.</div>
+        <div class="vault-workbench">
+          <div class="incident-feed" id="incidentList"></div>
+          <div class="incident-preview" id="incidentViewer">Select an incident from the feed to inspect forensic triage details.</div>
         </div>
       </div>
     </section>
 
     <!-- Tab 3: Hardware Bus -->
     <section class="view-pane" id="view-hardware">
-      <div class="console-frame">
-        <div class="frame-head">
+      <div class="workbench-card">
+        <div class="card-head-row">
           <div>
-            <div class="frame-title">Connected USB & HID Hardware Inventory</div>
-            <div class="frame-subtitle">Real-time enumeration from macOS IOKit Registry</div>
+            <div class="card-heading">Connected USB & HID Hardware Inventory</div>
+            <div class="card-subtext">Real-time device bus enumeration from macOS IOKit Registry</div>
           </div>
         </div>
 
-        <table class="hw-table">
+        <table class="hardware-table">
           <thead>
             <tr>
               <th>VENDOR ID</th>
@@ -633,36 +709,38 @@
 
     <!-- Tab 4: Attack Simulator Lab -->
     <section class="view-pane" id="view-simulator">
-      <div class="console-frame">
-        <div class="frame-head">
+      <div class="workbench-card">
+        <div class="card-head-row">
           <div>
-            <div class="frame-title">Synthetic BadUSB Attack Simulation Lab</div>
-            <div class="frame-subtitle">Safely fire simulated microcontroller attacks to verify the Decoy Sink live</div>
+            <div class="card-heading">Synthetic BadUSB Attack Simulation Lab</div>
+            <div class="card-subtext">Safely fire simulated microcontroller attacks to verify the Decoy Sink live</div>
           </div>
         </div>
 
-        <div class="lab-card">
-          <div>
-            <div class="lab-title">1. Flipper Zero BadUSB Dropper (Resume Download Payload)</div>
-            <div class="lab-desc">Injects commands at 80+ chars/sec with 12ms uniform microcontroller timing intervals.</div>
+        <div class="sim-grid">
+          <div class="sim-row">
+            <div>
+              <div class="sim-name">1. Flipper Zero BadUSB Dropper (Resume Download Payload)</div>
+              <div class="sim-spec">Injects commands at 80+ chars/sec with 12ms uniform microcontroller timing intervals.</div>
+            </div>
+            <button class="btn-fire-test" onclick="fireSimulation('resume_dropper', true)">Launch Attack Test</button>
           </div>
-          <button class="btn-fire" onclick="fireSimulation('resume_dropper', true)">Launch Attack Test</button>
-        </div>
 
-        <div class="lab-card">
-          <div>
-            <div class="lab-title">2. Reverse Shell Dropper (macOS / Linux Socket Attack)</div>
-            <div class="lab-desc">Injects automated bash TCP socket injection commands targeting port 4444.</div>
+          <div class="sim-row">
+            <div>
+              <div class="sim-name">2. Reverse Shell Dropper (macOS / Linux Socket Attack)</div>
+              <div class="sim-spec">Injects automated bash TCP socket injection commands targeting port 4444.</div>
+            </div>
+            <button class="btn-fire-test" style="background: linear-gradient(135deg, #EA580C 0%, #DC2626 100%);" onclick="fireSimulation('reverse_shell', true)">Launch Attack Test</button>
           </div>
-          <button class="btn-fire" style="background: #EA580C;" onclick="fireSimulation('reverse_shell', true)">Launch Attack Test</button>
-        </div>
 
-        <div class="lab-card">
-          <div>
-            <div class="lab-title">3. Benign Human Baseline (Zero False-Positive Verification)</div>
-            <div class="lab-desc">Simulates a human typing naturally (120-240ms intervals with high biometric jitter).</div>
+          <div class="sim-row">
+            <div>
+              <div class="sim-name">3. Benign Human Baseline (Zero False-Positive Verification)</div>
+              <div class="sim-spec">Simulates a human typing naturally (120-240ms intervals with high biometric jitter).</div>
+            </div>
+            <button class="btn-fire-test secondary" onclick="fireSimulation('benign_human', false)">Verify Human Typing</button>
           </div>
-          <button class="btn-fire secondary" onclick="fireSimulation('benign_human', false)">Verify Human Typing</button>
         </div>
       </div>
     </section>
@@ -672,7 +750,7 @@
     let isArmed = true;
 
     function switchTab(tabId) {
-      document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('active'));
 
       event.currentTarget.classList.add('active');
@@ -698,17 +776,17 @@
         const btn = document.getElementById('btnToggle');
 
         if (isArmed) {
-          pill.style.color = 'var(--green)';
-          pill.style.background = 'var(--green-dim)';
-          pill.style.borderColor = 'rgba(5, 150, 105, 0.25)';
-          dot.style.background = 'var(--green)';
+          pill.style.color = 'var(--emerald)';
+          pill.style.background = 'var(--emerald-tint)';
+          pill.style.borderColor = 'rgba(0, 200, 5, 0.25)';
+          dot.style.background = 'var(--emerald)';
           text.innerText = 'SHIELD ARMED';
           btn.innerText = 'Disarm';
         } else {
-          pill.style.color = 'var(--red)';
-          pill.style.background = 'var(--red-dim)';
-          pill.style.borderColor = 'rgba(220, 38, 38, 0.25)';
-          dot.style.background = 'var(--red)';
+          pill.style.color = 'var(--crimson)';
+          pill.style.background = 'var(--crimson-tint)';
+          pill.style.borderColor = 'rgba(255, 59, 48, 0.25)';
+          dot.style.background = 'var(--crimson)';
           text.innerText = 'SHIELD DISARMED';
           btn.innerText = 'Arm Shield';
         }
@@ -736,19 +814,19 @@
       list.innerHTML = '';
 
       if (!data.incidents || data.incidents.length === 0) {
-        list.innerHTML = '<div style="padding: 12px; color: var(--text-3); font-size: 12px; font-family: var(--fpx);">No incidents recorded. Endpoint clean.</div>';
+        list.innerHTML = '<div style="padding: 14px; color: var(--text-muted); font-size: 12px; font-family: var(--fpx);">No incidents recorded. Endpoint clean.</div>';
         return;
       }
 
       data.incidents.forEach((inc, idx) => {
         const item = document.createElement('div');
-        item.className = 'record-entry' + (idx === 0 ? ' selected' : '');
+        item.className = 'incident-tile' + (idx === 0 ? ' selected' : '');
         item.innerHTML = `
-          <div class="record-title">${inc.filename}</div>
-          <div class="record-date">${inc.created_at}</div>
+          <div class="incident-title">${inc.filename}</div>
+          <div class="incident-meta">${inc.created_at}</div>
         `;
         item.onclick = () => {
-          document.querySelectorAll('.record-entry').forEach(i => i.classList.remove('selected'));
+          document.querySelectorAll('.incident-tile').forEach(i => i.classList.remove('selected'));
           item.classList.add('selected');
           loadIncidentDetail(inc.filename);
         };
@@ -787,7 +865,6 @@
       fetch('/api/open-folder', { method: 'POST' });
     }
 
-    // Live update loop
     setInterval(pollStatus, 1000);
     pollStatus();
   </script>
