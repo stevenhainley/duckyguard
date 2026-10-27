@@ -104,14 +104,19 @@ class KeystrokeAnomalyDetector:
 
             # 2. Synthetic Jitter Score (0.0 to 0.30)
             # Microcontrollers have near-zero jitter (delay loops or identical sleep calls)
-            if jitter < 0.004:
+            if jitter < 0.003:
                 jitter_score = 0.30
-            elif jitter < self.jitter_threshold_sec:
+            elif jitter < 0.008:
                 jitter_score = 0.20
-            elif jitter < 0.025:
-                jitter_score = 0.08
+            elif jitter < self.jitter_threshold_sec:
+                jitter_score = 0.10
             else:
                 jitter_score = 0.0
+
+            # Human Variance Discount: If timing variance is high (human mashing/spamming keys),
+            # this proves non-synthetic biomechanics even at high peak velocities
+            if jitter >= 0.018:
+                speed_score = max(0.0, speed_score - 0.25)
 
             # 3. USB Insertion Correlation Score (0.0 to 0.35)
             usb_score = 0.0

