@@ -11,7 +11,7 @@ one. Reproduce with:
 ```
 
 Machine: MacBook Pro, Apple silicon (arm64), macOS 26.6, Python 3.14.8,
-2026-10-26.
+2026-10-26 (detector rules G/H/S and re-run 2026-10-27, same machine).
 
 ## 1. What the detector decides on
 
@@ -31,6 +31,9 @@ last 10 seconds. The decision rules (`src/duckyguard/detector.py`):
 | D | >= 6 keys/s, CV < 0.05, 20 keys | DEFAULT_DELAY payloads typed at human speed with machine regularity |
 | E | payload pattern or fresh untrusted keyboard, score >= 0.75, 8 keys, CV < 0.15 | corroborated bursts |
 | F | score >= 0.90 over 8 keys | everything at once |
+| G (added before release) | >= 40 keys/s, CV < 0.10, 6 keys | Rubber Ducky / Pico default speed, blocked on the 6th key instead of the 8th |
+| H (added before release) | untrusted keyboard seen in the last 10 s, >= 22 keys/s, CV < 0.08, 6 keys | fast metronomic burst right after a new keyboard appears |
+| S (added before release) | the current burst was already blocked and has not paused > 350 ms | an attacker who slows down or adds jitter mid-payload to shake the detector |
 
 Human reference ranges used for the thresholds and the simulation:
 Dhakal et al., CHI 2018 (136M keystrokes: mean 52 WPM, inter-key interval
@@ -59,9 +62,17 @@ published mean and CV; "pauses" adds thinking pauses. 1000 runs per profile.
 | hunt and peck 25 WPM | 1000 | 0 | 0.00% |
 | **all human profiles** | **7000** | **0** | **0.000%** |
 
+Seed 2026 gives 0/7000. Other seeds are not always zero: before rules G/H/S, seed 99 gave 2/7000 (0.029%) and the final rules give the same 2/7000
+on that seed; seed 7 gives 0/7000 before and after. The new rules G and H
+did not add any false positive on seeds 2026, 7 or 99 once their thresholds
+were tightened (a first draft of G with CV < 0.15 blocked 1 of 1000
+key-mashing runs, which is why it was tightened to CV < 0.10).
+
 Hardest case: the same humans typing within 10 s of plugging in an untrusted
-keyboard (rule E is armed). 100 runs each: 0% for five profiles, **2%** for
-the 210 WPM record burst and **3%** for rhythmic WASD spam. In other words a
+keyboard (rules E and H are armed). 100 runs each, seed 2026: 0% for five
+profiles, **3%** for the 210 WPM record burst and **4%** for rhythmic WASD
+spam (the pre-G/H/S build measured 2% and 3% on the same test; with 100 runs that
+difference is within noise but it is not proven to be zero). In other words a
 competitive typist who plugs in a new keyboard and immediately types at peak
 speed with unusually even rhythm can be blocked once; trusting the keyboard
 removes the extra suspicion.
@@ -83,17 +94,17 @@ matching DuckyScript defaults and the 12 ms timing of `captures/sample-flipper-a
 
 | profile | caught | median keys before block | median ms from first key |
 |---|---:|---:|---:|
-| Rubber Ducky default (~8 ms/key) | 100% | 8 | 57 |
-| Flipper BadUSB 12 ms/key | 100% | 8 | 84 |
-| Pico ducky 20 ms/key | 100% | 8 | 140 |
+| Rubber Ducky default (~8 ms/key) | 100% | 6 | 40 |
+| Flipper BadUSB 12 ms/key | 100% | 6 | 60 |
+| Pico ducky 20 ms/key | 100% | 6 | 100 |
 | evasion: even 30 ms, no shell pattern (claims-audit gap) | 100% | 8 | 210 |
 | evasion: even 40 ms, no shell pattern | 100% | 8 | 280 |
 | evasion: 60 ms +-3 ms jitter | 100% | 12 | 660 |
 | slow payload: even 100 ms (DEFAULT_DELAY 100) | 100% | 20 | 1900 |
 | slow + randomised 80-120 ms | **0%** | - | - |
-| Spotlight then Terminal, 15 ms | 100% | 8 | 105 |
+| Spotlight then Terminal, 15 ms | 100% | 6 | 75 |
 
-Without key-up information (hold times unknown) the results are identical,
+Without key-up information (hold times unknown) the results are identical (re-measured after G/H/S),
 so detection does not depend on hold-time data.
 
 **The miss is deliberate.** A payload typed at 8-12 keys/s with randomised
@@ -107,7 +118,7 @@ catch it would block fast human typists.
 | profile | v1.0.0 | v2.0.0 |
 |---|---|---|
 | all seven human profiles | 0% FP | 0% FP |
-| Rubber Ducky 8 ms / Flipper 12 ms / Pico 20 ms | caught, 12 keys | caught, 8 keys |
+| Rubber Ducky 8 ms / Flipper 12 ms / Pico 20 ms | caught, 12 keys | caught, 6 keys (before G/H/S: 8) |
 | even 30 ms, no pattern, no new USB | **missed (0%)** | caught, 8 keys |
 | even 40 ms, no pattern | **missed** | caught, 8 keys |
 | 60 ms +-3 ms | **missed** | caught, 12 keys |
@@ -121,11 +132,11 @@ timestamp", and the 12-key text window could never match the 13-character
 ## 4. How many keys get through
 
 DuckyGuard decides on the Nth key of a burst, so N-1 keys reach the front
-application before the block (the Nth is dropped). In simulation N is 8 at
-injector speed; in the live safe test on this Mac N was 8 to 12 (the first
+application before the block (the Nth is dropped). In simulation N is 6 at
+injector speed up to 25 ms/key (8 for even 30-40 ms payloads with no other signal); in the live safe test on this Mac N was 8 to 12 (the first
 keys land while the window is still activating, which adds jitter). A payload
 that opens Spotlight and types `terminal` + Return has sent 9 key events;
-with N = 8 the Return is blocked, with N = 12 it is not. **DuckyGuard does not
+with N = 6 or 8 the Return is blocked, with N = 12 it is not. The earlier live safe test (N = 8 to 12) predates rules G/H/S and has not been repeated. **DuckyGuard does not
 guarantee that the first command never runs.** The v1 report text
 "NEUTRALIZED & CONTAINED (Zero Command Execution)" was removed for that
 reason; v2 reports list exactly which characters reached the app.
@@ -161,7 +172,7 @@ Targets for a later release: under 0.3% idle, under 60 MB.
 
 ## 7. Tests
 
-`.venv/bin/python -m pytest -q`: 44 tests pass (unit tests for the detector,
+`.venv/bin/python -m pytest -q`: 49 tests pass (unit tests for the detector,
 store, devices, incidents; replay of `captures/sample-flipper-attack.txt` at 12
 and 30 ms per key; hypothesis property tests for timing edge cases such as
 zero and negative gaps, clock going backwards, infinite rates, short fast
@@ -172,5 +183,5 @@ bursts separated by pauses, and "every block has reasons").
 - Any real Rubber Ducky, Flipper Zero, Pico, O.MG cable or Bash Bunny.
 - That hardware key events on every macOS version carry source pid 0 (Apple
   documents it; pynput relies on it; checked here only with synthetic events).
-- Intel Macs, macOS 12-14 (built and run on macOS 26 / arm64 only).
+- Intel Macs and macOS before 26 (the released app is built for and run on macOS 26 / arm64 only; the bundled Python has minos 26.0).
 - Behaviour with a second physical keyboard attached (none available).

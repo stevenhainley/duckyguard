@@ -110,10 +110,10 @@ def test_auto_repeat_and_modifiers_ignored():
 
 def test_pause_starts_new_burst():
     det = KeystrokeAnomalyDetector()
-    # 7 fast keys, a one-second pause, then 7 fast keys: never 8 in one burst
+    # 5 fast keys, a one-second pause, then 5 fast keys: never 6 in one burst
     t = 0.0
     for rep in range(6):
-        for _ in range(7):
+        for _ in range(5):
             v = det.observe(KeyEvent(timestamp=t, char="x"))
             assert not v.block
             t += 0.012
@@ -163,3 +163,52 @@ def test_record_keystroke_compat_shim():
         blocked, score, metrics = det.record_keystroke("a", timestamp=i * 0.01)
     assert blocked is True
     assert "reasons" in metrics
+
+
+def test_rubber_ducky_default_blocked_at_6th_key():
+    det = KeystrokeAnomalyDetector()
+    n, v = feed(det, [0.008] * 40, hold=0.002)
+    assert n == 6 and v.features["rule"].startswith("G")
+
+
+def test_new_keyboard_plus_fast_even_burst_blocks_at_6_keys():
+    det = KeystrokeAnomalyDetector(usb_age_callback=lambda: 2.0)
+    n, v = feed(det, [0.040] * 30, text="hello world this is plain")
+    assert n == 6 and v.features["rule"].startswith("H")
+
+
+def test_same_burst_without_new_keyboard_not_blocked_that_early():
+    det = KeystrokeAnomalyDetector(usb_age_callback=lambda: None)
+    n, v = feed(det, [0.040] * 30, text="hello world this is plain")
+    assert n is not None and n >= 8
+
+
+def test_blocked_burst_stays_blocked_when_attacker_slows_down():
+    det = KeystrokeAnomalyDetector()
+    n, _ = feed(det, [0.010] * 20)
+    assert n is not None
+    t = 2000.0
+    det2 = KeystrokeAnomalyDetector()
+    for i in range(8):
+        t += 0.010
+        det2.observe(KeyEvent(timestamp=t, char="a"))
+    # attacker now types erratically at human-ish gaps but never pauses > 350 ms
+    for g in (0.19, 0.31, 0.12, 0.28, 0.22):
+        t += g
+        v = det2.observe(KeyEvent(timestamp=t, char="b"))
+        assert v.block and v.features["rule"].startswith("S")
+    # a real pause ends the lock
+    t += 1.0
+    assert not det2.observe(KeyEvent(timestamp=t, char="c")).block
+
+
+def test_timestamp_zero_is_a_real_timestamp():
+    det = KeystrokeAnomalyDetector()
+    blocked, _score, m = det.record_keystroke("a", 0.0)
+    assert not blocked
+    assert det._last_ts == 0.0
+
+
+def test_selftest_passes(capsys):
+    from duckyguard.selftest import run
+    assert run() == 0

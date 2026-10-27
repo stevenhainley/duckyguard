@@ -7,8 +7,9 @@ nothing is bypassed permanently.
 
 ## Requirements
 
-- macOS 12 Monterey or newer, Apple silicon or Intel (the DMG we build is for
-  the architecture of the Mac that built it; see "Build it yourself").
+- Apple silicon Mac on macOS 26 or newer. The released DMG is arm64 only and
+  its bundled Python 3.14 has a macOS 26 minimum (`vtool -show-build`). Older
+  macOS or Intel Macs: build from source (below); that is untested.
 - Nothing else: Python and every library are inside the app.
 
 ## 1. Get the app
@@ -91,7 +92,7 @@ step 3 above until it is notarized.
 git clone https://github.com/stevenhainley/DuckyGuard.git
 cd DuckyGuard
 python3 -m venv .venv            # a framework build of Python 3.12+ (Homebrew or python.org)
-.venv/bin/pip install -e . py2app pytest hypothesis pillow
+.venv/bin/pip install -e . py2app pytest hypothesis pillow "setuptools<75"   # py2app 0.28 breaks on newer setuptools
 ./packaging/build.sh             # tests, icons, py2app, ad-hoc signature, DMG + SHA-256
 ```
 

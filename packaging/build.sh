@@ -19,6 +19,10 @@ rm -rf build/py2app dist/DuckyGuard.app
 APP="dist/DuckyGuard.app"
 test -d "$APP"
 
+echo "== scrub build-machine path from Info.plist (py2app records the builder's python path)"
+/usr/libexec/PlistBuddy -c 'Set :PythonInfoDict:PythonExecutable /usr/bin/python3' "$APP/Contents/Info.plist"
+if grep -rIl "/Users/" "$APP/Contents/Info.plist" "$APP/Contents/Resources" 2>/dev/null | grep -v "\\.pyc$"; then echo "WARNING: absolute /Users/ path left in bundle"; fi
+
 echo "== ad-hoc signature (lets macOS run it after the Gatekeeper override; replace with Developer ID later)"
 codesign --force --deep --sign - "$APP" 2>/dev/null || true
 

@@ -1,6 +1,8 @@
 # Changelog
 
-## 2.0.0 (unreleased, branch `v2-polish`, 2026-10-26)
+## 2.0.0 (2026-10-27)
+
+- Detector: rule G (>= 40 keys/s, CV < 0.10 blocks at 6 keys), rule H (untrusted keyboard + >= 22 keys/s metronomic blocks at 6 keys), rule S (a burst already blocked stays blocked until a pause). Simulation only; see docs/EVALUATION.md.
 
 A rebuild around one idea: only claim what the code does, and make what it
 does visible.

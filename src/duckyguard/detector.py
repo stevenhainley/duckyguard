@@ -121,6 +121,7 @@ class KeystrokeAnomalyDetector:
         self._text: Deque[str] = collections.deque(maxlen=text_window)
         self._holds: Deque[float] = collections.deque(maxlen=history)
         self._last_ts: Optional[float] = None
+        self._burst_blocked = False     # current burst already flagged: stay blocked until a pause
 
         # Counters surfaced in the UI
         self.total_keys = 0
@@ -137,6 +138,7 @@ class KeystrokeAnomalyDetector:
             self._text.clear()
             self._holds.clear()
             self._last_ts = None
+            self._burst_blocked = False
 
     def observe(self, ev: KeyEvent) -> Verdict:
         """Score one key-down. Returns a Verdict; ``verdict.block`` is the decision."""
@@ -162,10 +164,12 @@ class KeystrokeAnomalyDetector:
             if self._last_ts is not None and (ev.timestamp - self._last_ts) > self.burst_gap_sec:
                 self._burst.clear()
                 self._holds.clear()
+                self._burst_blocked = False
             elif self._last_ts is not None and ev.timestamp < self._last_ts:
                 # Clock went backwards: never let a negative interval poison the stats.
                 self._burst.clear()
                 self._holds.clear()
+                self._burst_blocked = False
             self._last_ts = ev.timestamp
             self._burst.append(ev)
             if ev.hold_time is not None and ev.hold_time >= 0:
@@ -178,6 +182,17 @@ class KeystrokeAnomalyDetector:
                 self._text.append(" ")
 
             verdict = self._score()
+            if verdict.block:
+                self._burst_blocked = True
+            elif self._burst_blocked and verdict.kind != "buffering":
+                # Same burst was already flagged as a machine and no pause has happened:
+                # keep dropping it even if the attacker slows down or adds jitter mid-payload.
+                verdict.block = True
+                verdict.kind = "machine"
+                verdict.features["rule"] = "S: continuation of a burst already blocked"
+                verdict.reasons.append("this burst was already flagged as machine-typed and has not paused")
+                verdict.explanation = "Continuation of a keystroke burst DuckyGuard already blocked."
+                verdict.score = max(verdict.score, 0.75)
             if verdict.block:
                 self.blocks += 1
             self.recent_events.append({
@@ -321,6 +336,10 @@ class KeystrokeAnomalyDetector:
             block, rule = True, "C: >=16 keys/s, metronomic, 12 keys"
         elif cps >= 6 and cv < 0.05 and n_keys >= 20:
             block, rule = True, "D: slow but perfectly regular for 20 keys"   # DEFAULT_DELAY payloads
+        elif cps >= 40 and cv < 0.10 and n_keys >= 6:
+            block, rule = True, "G: >=40 keys/s with low variation, 6 keys"
+        elif new_keyboard and cps >= 22 and cv < 0.08 and n_keys >= 6:
+            block, rule = True, "H: >=22 keys/s, metronomic burst seconds after an untrusted keyboard appeared, 6 keys"
         elif (pattern_name or new_keyboard) and score >= 0.75 and n_keys >= 8 and cv < 0.15:
             block, rule = True, "E: corroborated by payload text or a fresh untrusted keyboard"
         elif score >= 0.90 and n_keys >= 8:

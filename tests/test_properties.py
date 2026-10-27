@@ -44,7 +44,7 @@ def test_normal_human_gaps_never_blocked(gaps):
 
 
 @settings(max_examples=100, deadline=None)
-@given(st.integers(min_value=1, max_value=7), st.floats(min_value=0.005, max_value=0.03))
+@given(st.integers(min_value=1, max_value=5), st.floats(min_value=0.005, max_value=0.03))
 def test_short_fast_bursts_separated_by_pauses_never_blocked(burst_len, gap):
     det = KeystrokeAnomalyDetector()
     t = 0.0

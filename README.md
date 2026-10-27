@@ -45,7 +45,7 @@ DuckyGuard to Applications, right-click, Open. Then grant **Input Monitoring**
 and **Accessibility** in System Settings, Privacy & Security; the first-run
 screen walks you through it. Full steps: [`docs/INSTALL.md`](docs/INSTALL.md).
 
-Requirements: macOS 12 or newer. Python and all libraries are inside the app.
+Requirements: Apple silicon Mac on macOS 26 or newer (the bundled Python 3.14 is built for macOS 26; the app has only been run on macOS 26 / arm64). Python and all libraries are inside the app.
 
 ## Run from source
 
@@ -66,7 +66,7 @@ The terminal you run it from needs the two permissions instead of the app.
 | what | result |
 |---|---|
 | False positives on 7 simulated human profiles, 7000 runs | 0 |
-| Injectors at 8-40 ms per key, even timing | 100% caught, median 8 keys before the block |
+| Injectors at 8-40 ms per key, even timing | 100% caught, median 6 keys before the block at 8-25 ms per key, 8 at 30-40 ms (simulation) |
 | Even 100 ms per key (DEFAULT_DELAY 100) | 100% caught at 20 keys |
 | Randomised 80-120 ms per key | 0% caught, by design |
 | Tap callback: key event to verdict | median 14 us, p99 0.7 ms (live engine, one Mac) |

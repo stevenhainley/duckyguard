@@ -35,6 +35,7 @@ def main(argv=None) -> int:
     ex = sub.add_parser("export", help="export one incident as Markdown")
     ex.add_argument("incident_id")
     sub.add_parser("bench", help="run the simulation harness")
+    sub.add_parser("selftest", help="headless software self-test (no permissions needed)")
     args = ap.parse_args(argv)
 
     if args.cmd in (None, "app"):
@@ -96,6 +97,10 @@ def main(argv=None) -> int:
             return 1
         print(export_incident(inc, s.exports_dir, __version__))
         return 0
+
+    if args.cmd == "selftest":
+        from .selftest import run
+        return run()
 
     if args.cmd == "bench":
         import runpy

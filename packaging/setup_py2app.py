@@ -22,7 +22,7 @@ PLIST = {
     "CFBundleIdentifier": "co.shindustries.duckyguard",
     "CFBundleShortVersionString": __version__,
     "CFBundleVersion": __version__,
-    "LSMinimumSystemVersion": "12.0",
+    "LSMinimumSystemVersion": "26.0",   # bundled Homebrew Python 3.14 has minos 26.0 (checked with vtool)
     "LSUIElement": True,                       # menu bar app: no Dock icon
     "NSHumanReadableCopyright": "MIT License. Steven Hainley, sh. industries.",
     "NSHighResolutionCapable": True,

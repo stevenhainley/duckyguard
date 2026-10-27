@@ -35,7 +35,7 @@ was dropped, and which keyboard appeared shortly before (attributed by time).
 
 ## Assumptions
 
-- macOS 12+ with Input Monitoring (to see keystrokes) and Accessibility (to
+- macOS 26+ (release build; older versions untested) with Input Monitoring (to see keystrokes) and Accessibility (to
   drop them) granted to DuckyGuard. Without Accessibility it only warns.
 - Hardware key events carry source pid 0 and synthesized events carry the
   poster's pid (documented by Apple; pynput depends on it; not verified here
