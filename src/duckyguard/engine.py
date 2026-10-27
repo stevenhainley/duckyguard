@@ -72,7 +72,7 @@ class Engine:
         kwargs = {}
         if enumerate_keyboards is not None:
             kwargs["enumerate"] = enumerate_keyboards
-        self.keyboards = KeyboardWatcher(is_trusted=self.store.is_trusted,
+        self.keyboards = KeyboardWatcher(is_trusted=self.store.is_trusted, poll_interval=2.0,
                                          on_new_keyboard=self._on_new_keyboard, **kwargs)
         self.detector = KeystrokeAnomalyDetector(
             usb_age_callback=self.keyboards.seconds_since_untrusted_keyboard,

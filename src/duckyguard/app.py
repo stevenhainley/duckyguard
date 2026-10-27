@@ -340,6 +340,7 @@ class DuckyGuardApp(rumps.App):
                 except Exception:
                     pass
             self.push("block_started", {"t": evt.get("t")})
+            self.push_snapshot()
         elif kind == "block_finished":
             inc = evt.get("incident") or {}
             if not self.store.get("quiet_mode") and not inc.get("simulated"):

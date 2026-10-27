@@ -139,7 +139,7 @@ def summarize(inc: dict) -> str:
     kb = inc.get("keyboard") or {}
     who = kb.get("product") or "a keyboard"
     sim = " (simulated)" if inc.get("simulated") else ""
-    return f"{who} typed {n} keys at {cps:.0f} keys/s; {inc.get('blocked_count', 0)} were blocked{sim}."
+    return f"{who[0].upper() + who[1:]} typed {n} keys at {cps:.0f} keys/s; {inc.get('blocked_count', 0)} were blocked{sim}."
 
 
 def human_time(ts: Optional[float]) -> str:

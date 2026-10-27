@@ -15,8 +15,14 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.util
+import functools
 import subprocess
 from typing import Dict
+
+
+@functools.lru_cache(maxsize=None)
+def _lib(path: str):
+    return ctypes.cdll.LoadLibrary(path)
 
 INPUT_MONITORING_URL = "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"
 ACCESSIBILITY_URL = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
@@ -29,7 +35,7 @@ _kIOHIDAccessTypeGranted = 0
 def input_monitoring_granted() -> bool:
     """IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == granted (macOS 10.15+)."""
     try:
-        iokit = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/IOKit.framework/IOKit")
+        iokit = _lib("/System/Library/Frameworks/IOKit.framework/IOKit")
         fn = iokit.IOHIDCheckAccess
         fn.restype = ctypes.c_uint32
         fn.argtypes = [ctypes.c_uint32]
@@ -41,8 +47,7 @@ def input_monitoring_granted() -> bool:
 def accessibility_granted() -> bool:
     """AXIsProcessTrusted()."""
     try:
-        appsvc = ctypes.cdll.LoadLibrary(
-            "/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")
+        appsvc = _lib("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")
         fn = appsvc.AXIsProcessTrusted
         fn.restype = ctypes.c_bool
         return bool(fn())
@@ -53,7 +58,7 @@ def accessibility_granted() -> bool:
 def request_input_monitoring() -> None:
     """Asks macOS to show the Input Monitoring prompt for this process (once)."""
     try:
-        iokit = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/IOKit.framework/IOKit")
+        iokit = _lib("/System/Library/Frameworks/IOKit.framework/IOKit")
         fn = iokit.IOHIDRequestAccess
         fn.restype = ctypes.c_bool
         fn.argtypes = [ctypes.c_uint32]

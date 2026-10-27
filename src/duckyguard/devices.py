@@ -13,7 +13,8 @@ What this can and cannot do (honest version):
   them in the CGEvent API that DuckyGuard uses, so a blocked burst is
   *attributed* to the most recently attached untrusted keyboard, not proven
   to come from it. The incident says so.
-* Polling runs once per second and takes ~10 ms; see docs/EVALUATION.md.
+* Polling runs once per second through IOKit registry reads (~1 ms, measured;
+  see docs/EVALUATION.md). ioreg is the fallback.
 """
 
 from __future__ import annotations
@@ -69,15 +70,19 @@ def _is_keyboard(node: dict) -> bool:
 
 def parse_ioreg(plist_bytes: bytes, now: Optional[float] = None) -> List[Keyboard]:
     """Parse ``ioreg -a -r -c IOHIDDevice -l`` output into keyboards."""
-    now = now or time.time()
     try:
         data = plistlib.loads(plist_bytes)
     except Exception:
         return []
     roots = data if isinstance(data, list) else [data]
+    return _nodes_to_keyboards(roots, now)
+
+
+def _nodes_to_keyboards(nodes: List[dict], now: Optional[float] = None) -> List[Keyboard]:
+    now = now or time.time()
     out: List[Keyboard] = []
     seen: Set[str] = set()
-    for node in roots:
+    for node in nodes:
         if not isinstance(node, dict) or not _is_keyboard(node):
             continue
         vid = int(node.get("VendorID") or 0)
@@ -91,22 +96,98 @@ def parse_ioreg(plist_bytes: bytes, now: Optional[float] = None) -> List[Keyboar
             continue
         seen.add(key)
         out.append(Keyboard(
-            key=key,
-            product=product,
-            manufacturer=str(node.get("Manufacturer") or ""),
-            vendor_id=vid,
-            product_id=pid,
-            serial=serial,
-            transport=transport,
-            built_in=built_in,
-            location_id=int(node.get("LocationID") or 0),
-            first_seen=now,
+            key=key, product=product, manufacturer=str(node.get("Manufacturer") or ""),
+            vendor_id=vid, product_id=pid, serial=serial, transport=transport, built_in=built_in,
+            location_id=int(node.get("LocationID") or 0), first_seen=now,
             vendor_note=KNOWN_INJECTOR_VIDS.get(vid, ""),
         ))
     return out
 
 
-def enumerate_keyboards() -> List[Keyboard]:
+# ----------------------------------------------------------------- IOKit path
+# Direct IOKit registry reads via ctypes: ~1 ms per enumeration versus ~200 ms
+# for spawning ioreg. Falls back to ioreg if anything is missing.
+
+_PROP_KEYS = ("Product", "VendorID", "ProductID", "Transport", "SerialNumber", "Built-In",
+              "DeviceUsagePairs", "Manufacturer", "LocationID", "PrimaryUsagePage", "PrimaryUsage")
+_iokit = None
+_cf = None
+_cfkeys: Dict[str, int] = {}
+
+
+def _load_iokit() -> bool:
+    global _iokit, _cf, _cfkeys
+    if _iokit is not None:
+        return True
+    try:
+        import ctypes
+        iokit = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/IOKit.framework/IOKit")
+        cf = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")
+        iokit.IOServiceMatching.restype = ctypes.c_void_p
+        iokit.IOServiceMatching.argtypes = [ctypes.c_char_p]
+        iokit.IOServiceGetMatchingServices.restype = ctypes.c_int
+        iokit.IOServiceGetMatchingServices.argtypes = [ctypes.c_uint32, ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint32)]
+        iokit.IOIteratorNext.restype = ctypes.c_uint32
+        iokit.IOIteratorNext.argtypes = [ctypes.c_uint32]
+        iokit.IORegistryEntryCreateCFProperty.restype = ctypes.c_void_p
+        iokit.IORegistryEntryCreateCFProperty.argtypes = [ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint32]
+        iokit.IOObjectRelease.argtypes = [ctypes.c_uint32]
+        cf.CFRelease.argtypes = [ctypes.c_void_p]
+        cf.CFStringCreateWithCString.restype = ctypes.c_void_p
+        cf.CFStringCreateWithCString.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_uint32]
+        _cfkeys = {k: cf.CFStringCreateWithCString(None, k.encode(), 0x08000100) for k in _PROP_KEYS}
+        _iokit, _cf = iokit, cf
+        return True
+    except Exception:
+        return False
+
+
+def _to_py(o):
+    """Convert a bridged CF value to plain Python (str / int / bool / list of dict)."""
+    if isinstance(o, (str, bool, int, float)) or o is None:
+        return o
+    if hasattr(o, "objectForKey_"):
+        return {str(k): _to_py(o.objectForKey_(k)) for k in o.allKeys()}
+    if hasattr(o, "objectAtIndex_"):
+        return [_to_py(x) for x in o]
+    if hasattr(o, "objCType"):
+        t = o.objCType()
+        if t in (b"c", b"B"):
+            return bool(o.boolValue())
+        return int(o.longLongValue())
+    return str(o)
+
+
+def enumerate_keyboards_iokit() -> Optional[List[Keyboard]]:
+    if not _load_iokit():
+        return None
+    import ctypes
+    import objc
+    it = ctypes.c_uint32(0)
+    if _iokit.IOServiceGetMatchingServices(0, _iokit.IOServiceMatching(b"IOHIDDevice"), ctypes.byref(it)) != 0:
+        return None
+    nodes: List[dict] = []
+    try:
+        while True:
+            svc = _iokit.IOIteratorNext(it.value)
+            if not svc:
+                break
+            d: dict = {}
+            for k, cfk in _cfkeys.items():
+                p = _iokit.IORegistryEntryCreateCFProperty(svc, cfk, None, 0)
+                if p:
+                    try:
+                        d[k] = _to_py(objc.objc_object(c_void_p=p))
+                    finally:
+                        _cf.CFRelease(p)
+            nodes.append(d)
+            _iokit.IOObjectRelease(svc)
+    finally:
+        _iokit.IOObjectRelease(it.value)
+    return _nodes_to_keyboards(nodes)
+
+
+def enumerate_keyboards_ioreg() -> List[Keyboard]:
     try:
         proc = subprocess.run(["ioreg", "-a", "-r", "-c", "IOHIDDevice", "-l"],
                               capture_output=True, timeout=3.0)
@@ -115,6 +196,16 @@ def enumerate_keyboards() -> List[Keyboard]:
     if proc.returncode != 0:
         return []
     return parse_ioreg(proc.stdout)
+
+
+def enumerate_keyboards() -> List[Keyboard]:
+    try:
+        kbs = enumerate_keyboards_iokit()
+        if kbs is not None:
+            return kbs
+    except Exception:
+        pass
+    return enumerate_keyboards_ioreg()
 
 
 class KeyboardWatcher:
