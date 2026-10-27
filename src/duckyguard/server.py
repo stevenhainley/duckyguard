@@ -62,10 +62,14 @@ class DuckyGuardServer:
                     qs = urllib.parse.parse_qs(parsed.query)
                     fname = qs.get("file", [""])[0]
                     self._handle_incident_detail(fname)
-                elif path == "/assets/logo.png":
-                    self._serve_asset("logo.png", "image/png")
-                elif path == "/assets/ducky_pixel_cute.png":
-                    self._serve_asset("ducky_pixel_cute.png", "image/png")
+                elif path.startswith("/assets/"):
+                    asset_name = path[len("/assets/"):]
+                    mime = "image/png"
+                    if asset_name.endswith(".jpg") or asset_name.endswith(".jpeg"):
+                        mime = "image/jpeg"
+                    elif asset_name.endswith(".svg"):
+                        mime = "image/svg+xml"
+                    self._serve_asset(asset_name, mime)
                 else:
                     super().do_GET()
 
