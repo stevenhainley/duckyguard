@@ -38,6 +38,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.titleVisibility = .hidden
         window.minSize = NSSize(width: 860, height: 560)
         window.isReleasedWhenClosed = false
+        window.isMovableByWindowBackground = true
         window.delegate = self
         window.backgroundColor = NSColor(red: 0.992, green: 0.984, blue: 0.969, alpha: 1.0) // Warm Ivory #FDFBF7
 
