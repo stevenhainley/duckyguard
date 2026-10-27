@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DuckyGuard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="brand"><span class="o">Ducky</span>Guard<span class="o">.</span></div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="overview" class="on">Overview</button>
+    <button data-tab="timeline">Timeline <span class="count" id="incCount"></span></button>
+    <button data-tab="devices">Devices</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+  <div class="pill" id="pill"><span class="dot"></span><span id="pillText">Starting</span></div>
+</header>
+
+<main id="main">
+
+  <!-- ONBOARDING -->
+  <section class="view" id="view-onboarding">
+    <div class="onb">
+      <div class="onb-steps" id="onbSteps"><i class="on"></i><i></i><i></i></div>
+
+      <div class="onb-page" data-page="0">
+        <img class="duck" src="duck.png" alt="">
+        <h1>Keyboards that type too fast get stopped.</h1>
+        <p class="lead">A USB stick can pretend to be a keyboard and type a command in under a second
+          (Rubber Ducky, Flipper Zero, O.MG cable). DuckyGuard watches the rhythm of every keystroke.
+          When a burst is faster and more even than any hand, it drops the rest of the keys before they reach an app.</p>
+        <ul class="plain">
+          <li><b>What it does:</b> blocks machine-timed bursts, tells you why in plain English, remembers keyboards you trust.</li>
+          <li><b>What it does not do:</b> stop slow, randomised payloads; stop the first few keys of a burst; replace an antivirus.</li>
+          <li><b>Privacy:</b> nothing leaves this Mac. Incidents live in a folder only you can read.</li>
+        </ul>
+        <div class="row end"><button class="btn primary" data-onb="1">Continue</button></div>
+      </div>
+
+      <div class="onb-page hidden" data-page="1">
+        <h1>Two permissions.</h1>
+        <p class="lead">macOS asks you to allow apps that watch or change keystrokes. Both are read in System Settings,
+          Privacy &amp; Security. DuckyGuard checks every two seconds, so just come back here.</p>
+        <div class="perm" id="permIM">
+          <div class="perm-state"></div>
+          <div class="perm-body">
+            <b>Input Monitoring</b>
+            <span>Lets DuckyGuard see keystrokes system-wide so it can time them.</span>
+          </div>
+          <button class="btn" data-settings="input_monitoring">Open System Settings</button>
+        </div>
+        <div class="perm" id="permAX">
+          <div class="perm-state"></div>
+          <div class="perm-body">
+            <b>Accessibility</b>
+            <span>Lets DuckyGuard drop keystrokes. Without it DuckyGuard can only warn.</span>
+          </div>
+          <button class="btn" data-settings="accessibility">Open System Settings</button>
+        </div>
+        <p class="hint">In the list that opens, turn on <b>DuckyGuard</b> (or the app you launched it from). If it is not listed, click + and pick it.</p>
+        <div class="row end"><button class="btn" data-onb="0">Back</button><button class="btn primary" id="onbNext1" data-onb="2">Continue</button></div>
+      </div>
+
+      <div class="onb-page hidden" data-page="2">
+        <h1>See it work, safely.</h1>
+        <p class="lead">DuckyGuard can type a harmless sentence into its own window at machine speed. You will see the first
+          keys land, the shield turn red, and the rest get dropped. No hardware, nothing runs.</p>
+        <div class="row end"><button class="btn" data-onb="1">Back</button><button class="btn primary" id="onbFinish">Finish and run the test</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OVERVIEW -->
+  <section class="view hidden" id="view-overview">
+    <div class="hero">
+      <img class="duck sm" src="duck.png" alt="">
+      <div class="hero-text">
+        <h1 id="heroTitle">Protected</h1>
+        <p id="heroSub">Watching your keyboards.</p>
+        <div class="row" id="heroActions">
+          <button class="btn" id="btnToggle">Pause</button>
+          <button class="btn primary" id="btnTest">Test it safely</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div><span id="stKeys">0</span><label>keys seen</label></div>
+        <div><span id="stBlocks">0</span><label>bursts blocked</label></div>
+        <div><span id="stKb">0</span><label>keyboards</label></div>
+      </div>
+    </div>
+
+    <div class="notice hidden" id="permNotice"></div>
+    <div class="notice hidden" id="errNotice"></div>
+    <div class="notice hidden" id="updNotice"></div>
+
+    <div class="card rhythm-card">
+      <div class="card-head"><b>Keystroke rhythm</b><span id="rhythmSub">gap between recent keys, in milliseconds</span></div>
+      <div class="rhythm" id="rhythm"></div>
+      <div class="rhythm-legend"><i class="h"></i>hand <i class="m"></i>blocked <i class="s"></i>software-typed</div>
+    </div>
+
+    <div class="card" id="testCard">
+      <div class="card-head"><b>Test pad</b><span id="testSub">The safe test types here. Keys that land before the decision stay; the rest never arrive.</span></div>
+      <textarea id="testPad" spellcheck="false" placeholder="Click Test it safely. You can also type here yourself to see your own rhythm."></textarea>
+      <div class="verdict" id="verdict"></div>
+    </div>
+
+    <div class="card hidden" id="lastCard">
+      <div class="card-head"><b>Last incident</b><span id="lastWhen"></span></div>
+      <p class="explain" id="lastExplain"></p>
+      <div class="row"><button class="btn" id="btnLastExport">Export report</button><button class="btn" data-goto="timeline">Open timeline</button></div>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section class="view hidden" id="view-timeline">
+    <div class="view-head"><h2>Timeline</h2><div class="row"><button class="btn" id="btnClear">Clear all</button></div></div>
+    <div id="timeline"></div>
+  </section>
+
+  <!-- DEVICES -->
+  <section class="view hidden" id="view-devices">
+    <div class="view-head"><h2>Keyboards</h2><span class="muted" id="devSub"></span></div>
+    <p class="muted">A keyboard you trust does not raise suspicion when it is plugged in. Trusting a keyboard does not turn
+      detection off: a trusted keyboard that types like a machine is still blocked.</p>
+    <div id="devices"></div>
+    <h3>Trusted, not connected</h3>
+    <div id="trustedList"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view hidden" id="view-settings">
+    <div class="view-head"><h2>Settings</h2></div>
+    <div class="setting"><div><b>Protection</b><span>Watch keystroke timing and block machine-timed bursts.</span></div><label class="sw"><input type="checkbox" data-setting="protection_enabled"><i></i></label></div>
+    <div class="setting"><div><b>Quiet mode</b><span>Block and log, but no sound and no notification.</span></div><label class="sw"><input type="checkbox" data-setting="quiet_mode"><i></i></label></div>
+    <div class="setting"><div><b>Launch at login</b><span>Adds a LaunchAgent in ~/Library/LaunchAgents. Remove it here or in System Settings.</span></div><label class="sw"><input type="checkbox" data-setting="launch_at_login"><i></i></label></div>
+    <div class="setting"><div><b>Check for updates</b><span>Once a day, one request to GitHub's releases page. Nothing is downloaded. <a href="#" id="btnCheckNow">Check now</a><em id="updText"></em></span></div><label class="sw"><input type="checkbox" data-setting="check_updates"><i></i></label></div>
+    <div class="setting"><div><b>Quarantine length</b><span>Keep dropping keys this long after the last blocked key. <em id="qLabel"></em></span></div><input type="range" min="0.5" max="10" step="0.5" id="qRange" data-setting="quarantine_seconds"></div>
+    <div class="setting"><div><b>Score software-typed keys</b><span>Expert. Also judge keys typed by programs (password managers, text expanders). Off by default because they type like machines on purpose.</span></div><label class="sw"><input type="checkbox" data-setting="score_software_input"><i></i></label></div>
+
+    <h3>Permissions</h3>
+    <div class="setting"><div><b>Input Monitoring</b><span id="setIM"></span></div><button class="btn" data-settings="input_monitoring">Open</button></div>
+    <div class="setting"><div><b>Accessibility</b><span id="setAX"></span></div><button class="btn" data-settings="accessibility">Open</button></div>
+
+    <h3>Your data</h3>
+    <div class="setting"><div><b>Incidents and settings</b><span id="dataDir"></span></div><button class="btn" id="btnDataDir">Show in Finder</button></div>
+
+    <h3>About</h3>
+    <div class="about">
+      <p><b>DuckyGuard <span id="aboutVersion"></span></b>, free and open source, by Steven Hainley, sh. industries.</p>
+      <p class="muted">Timing per key on this Mac: <span id="aboutLatency">not measured yet</span>. Keyboard check: <span id="aboutPoll">-</span> ms.</p>
+      <div class="row"><button class="btn" id="btnProject">Source and docs</button><button class="btn primary hidden" id="btnSupport">Support DuckyGuard</button></div>
+    </div>
+  </section>
+</main>
+
+<div class="toasts" id="toasts"></div>
+<script src="app.js"></script>
+</body>
+</html>

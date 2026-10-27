@@ -339,8 +339,8 @@ class KeystrokeAnomalyDetector:
         n = feats.get("burst_len", 0)
         span = float(feats.get("span_ms", 0)) / 1000.0
         cps = float(feats.get("cps", 0))
-        head = f"A keyboard typed {n} keys in {span:.1f} s ({cps:.0f} keys/s)"
-        if cps >= 16:
-            head += f", about {max(1, round(cps / 8))}x faster than a fast typist"
-        why = "; ".join(reasons[:3])
-        return f"{head}. {why}. DuckyGuard blocked it."
+        head = f"A keyboard typed {n} keys in {span:.1f} s ({cps:.0f} keys/s"
+        head += f", about {max(1, round(cps / 8))}x faster than a fast typist)" if cps >= 16 else ")"
+        rest = [r for r in reasons if "keys/s" not in r][:2]
+        why = ("; ".join(rest) + ". ") if rest else ""
+        return f"{head}. {why}DuckyGuard blocked it."
