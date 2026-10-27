@@ -132,26 +132,44 @@
       flex-shrink: 0;
     }
 
-    /* Clean, Prestigious Brand Lockup (No AI Badges or Kickers) */
-    .brand-section {
+    /* Prominent Bespoke Wordmark with Integrated Pixel Mascot */
+    .brand-logotype {
       display: flex;
       align-items: center;
       gap: 10px;
-      cursor: default;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.15s ease;
     }
-    .brand-duck-icon {
-      width: 24px;
-      height: 24px;
+    .brand-logotype:hover {
+      transform: translateY(-1px);
+    }
+    .brand-duck-mascot {
+      width: 32px;
+      height: 36px;
       object-fit: contain;
       image-rendering: pixelated;
-      filter: drop-shadow(0 1px 3px rgba(245, 158, 11, 0.25));
+      filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.35));
     }
-    .brand-name {
+    .brand-wordmark {
+      display: flex;
+      align-items: baseline;
       font-family: var(--fd);
-      font-size: 15px;
+      font-size: 20px;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .word-ducky {
+      background: linear-gradient(135deg, #FFB800 0%, #FF6B00 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+    .word-guard {
       color: var(--text);
+      font-weight: 800;
+      margin-left: 1px;
     }
 
     /* Segmented Navigation Dock */
@@ -758,10 +776,12 @@
 
   <!-- Header -->
   <header class="app-header">
-    <!-- Clean, Understated Top-Left Lockup (No AI Badges or Subtitles) -->
-    <div class="brand-section">
-      <img src="/assets/logo.png" alt="DuckyGuard" class="brand-duck-icon">
-      <span class="brand-name">DuckyGuard</span>
+    <!-- Prominent Stylized DuckyGuard Wordmark with Integrated Transparent Pixel Duck -->
+    <div class="brand-logotype" title="DuckyGuard">
+      <img src="/assets/duck_isolated_usb.png" alt="" class="brand-duck-mascot">
+      <div class="brand-wordmark">
+        <span class="word-ducky">Ducky</span><span class="word-guard">Guard</span>
+      </div>
     </div>
 
     <!-- Segmented Navigation Dock -->
@@ -991,7 +1011,7 @@
             </div>
           </div>
           <div class="wpm-badge" id="wpmTier">
-            <img src="/assets/logo.png" style="width:16px; height:16px; image-rendering:pixelated;">
+            <img src="/assets/duck_isolated_usb.png" style="width:16px; height:18px; image-rendering:pixelated;">
             <span id="wpmTierLabel">Waddling Duckling</span>
           </div>
         </div>
@@ -1001,7 +1021,7 @@
           <div class="pond-track">
             <div class="pond-water" id="pondWater"></div>
             <div class="swimming-duck" id="swimmingDuck">
-              <img src="/assets/logo.png" alt="Duck Swimming">
+              <img src="/assets/duck_isolated_usb.png" alt="Duck Swimming">
             </div>
           </div>
           <div style="display:flex; justify-content:space-between; font-family:var(--fm); font-size:10px; color:var(--text-subtle);">
@@ -1225,7 +1245,7 @@ function showToast(message) {
   const container = document.getElementById("toastContainer");
   const toast = document.createElement("div");
   toast.className = "toast";
-  toast.innerHTML = `<img src="/assets/logo.png"><span>${message}</span>`;
+  toast.innerHTML = `<img src="/assets/duck_isolated_usb.png" style="width:16px; height:18px; image-rendering:pixelated;"><span>${message}</span>`;
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = "0";
