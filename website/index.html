@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>DuckyGuard. — Stop BadUSB Attacks Before The Shell Opens</title>
+  <meta name="description" content="Autonomous hardware-layer HID injection defense for macOS. DuckyGuard pre-empts rogue USB keystroke bursts from Flipper Zero and Rubber Ducky into an isolated containment sandbox in under 100ms.">
+  <link rel="icon" type="image/png" href="assets/duck_isolated_usb.png">
+  <style>
+    /* DuckyGuard · Awwwards Site of the Year Standalone Product Architecture
+     * Design System: sh. industries v2.0 (Foreman Standard) + Stripe Precision
+     * Palette: Warm Ivory Canvas, Deep Stone Ink, Matte Shield Orange (#FF6B00)
+     */
+    @font-face {
+      font-family: "Funnel Display";
+      font-weight: 700;
+      src: url("fonts/FunnelDisplay-700.ttf") format("truetype");
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Funnel Display";
+      font-weight: 800;
+      src: url("fonts/FunnelDisplay-800.ttf") format("truetype");
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Funnel Sans";
+      font-weight: 400;
+      src: url("fonts/FunnelSans-400.ttf") format("truetype");
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Funnel Sans";
+      font-weight: 500;
+      src: url("fonts/FunnelSans-500.ttf") format("truetype");
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Funnel Sans";
+      font-weight: 600;
+      src: url("fonts/FunnelSans-600.ttf") format("truetype");
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #FDFBF7;
+      --bg-warm: #FAF6EF;
+      --surface: #FFFFFF;
+      --surface-duck: #FFF8EB;
+      --surface-subtle: #F4EFE6;
+
+      --line: #E8E2D5;
+      --line-subtle: #F0ECE4;
+
+      --text: #1C1917;
+      --text-muted: #78716C;
+      --text-subtle: #A8A29E;
+
+      /* Matte Shield Orange (Exact match to DuckyGuard shield) */
+      --accent: #FF6B00;
+      --accent-hover: #E66000;
+      --accent-tint: rgba(255, 107, 0, 0.10);
+
+      --duck-yellow: #FFB800;
+      --status-ok: #10B981;
+      --status-ok-tint: #ECFDF5;
+      --status-error: #EF4444;
+
+      --fd: "Funnel Display", system-ui, -apple-system, sans-serif;
+      --fs: "Funnel Sans", system-ui, -apple-system, sans-serif;
+      --fm: ui-monospace, "SF Mono", Menlo, monospace;
+
+      --r-sm: 6px;
+      --r-md: 12px;
+      --r-lg: 18px;
+      --r-full: 9999px;
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 16px -2px rgba(28, 25, 23, 0.06);
+      --shadow-lg: 0 12px 32px -4px rgba(28, 25, 23, 0.08);
+      --shadow-orange: 0 4px 20px -2px rgba(255, 107, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+      color: var(--text);
+      font: 400 15px/1.6 var(--fs);
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Subtle Geometric Grid */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(0,0,0,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .site-wrapper {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    /* Container */
+    .container {
+      width: 100%;
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation Header */
+    .site-header {
+      position: sticky;
+      top: 0;
+      background: rgba(253, 251, 247, 0.90);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line);
+      z-index: 100;
+    }
+    .header-inner {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Brand Lockup */
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-breadcrumb {
+      font-family: var(--fm);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .brand-breadcrumb a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .brand-breadcrumb a:hover {
+      color: var(--text);
+    }
+    .brand-logotype {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .duck-sprite {
+      width: 28px;
+      height: 32px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 2px 4px rgba(255, 107, 0, 0.3));
+    }
+    .brand-wordmark {
+      font-family: var(--fd);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .word-ducky { color: var(--accent); }
+    .word-guard { color: var(--text); }
+    .brand-dot { color: var(--accent); font-weight: 800; }
+
+    /* Nav Links */
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .nav-link {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-link:hover {
+      color: var(--text);
+    }
+
+    /* Buttons */
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font: 600 13px/1 var(--fs);
+      padding: 10px 18px;
+      border-radius: var(--r-sm);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn:hover {
+      border-color: var(--accent);
+      background: var(--surface-duck);
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent-hover);
+      color: #FFFFFF;
+      box-shadow: var(--shadow-orange);
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+    .btn-lg {
+      padding: 14px 26px;
+      font-size: 14px;
+      border-radius: var(--r-md);
+    }
+
+    /* Hero Section */
+    .hero-section {
+      padding: 80px 0 60px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hero-kicker {
+      font-family: var(--fm);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-duck);
+      border: 1px solid var(--line);
+      padding: 4px 12px;
+      border-radius: var(--r-full);
+    }
+    .hero-title {
+      font-family: var(--fd);
+      font-size: 58px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      color: var(--text);
+      max-width: 820px;
+      margin-bottom: 20px;
+    }
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin-bottom: 34px;
+      line-height: 1.55;
+    }
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .hero-meta {
+      font-family: var(--fm);
+      font-size: 11px;
+      color: var(--text-subtle);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .meta-divider {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--text-subtle);
+    }
+
+    /* Interactive Live Browser Demo */
+    .interactive-demo-wrap {
+      margin-top: 48px;
+      width: 100%;
+      max-width: 920px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+    .demo-chrome {
+      height: 42px;
+      background: var(--bg-warm);
+      border-bottom: 1px solid var(--line);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chrome-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .chrome-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #D5CEBF;
+    }
+    .chrome-title {
+      font-family: var(--fm);
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .demo-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .demo-controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .demo-canvas-box {
+      position: relative;
+      width: 100%;
+      height: 160px;
+      background: #FAF7F0;
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      overflow: hidden;
+    }
+    #webDemoCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .demo-log-strip {
+      background: #FAF7F0;
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      padding: 10px 14px;
+      font-family: var(--fm);
+      font-size: 11px;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Section Styles */
+    .section {
+      padding: 80px 0;
+      border-top: 1px solid var(--line);
+    }
+    .section-head {
+      margin-bottom: 48px;
+      text-align: center;
+    }
+    .section-kicker {
+      font-family: var(--fm);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-family: var(--fd);
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1.15;
+    }
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 10px auto 0;
+    }
+
+    /* Architecture Grid */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .arch-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+    .arch-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .arch-num {
+      font-family: var(--fm);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .arch-title {
+      font-family: var(--fd);
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .arch-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Pricing Section */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .price-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+    .price-card.featured {
+      border: 2px solid var(--accent);
+      background: linear-gradient(180deg, var(--surface-duck) 0%, #FFFFFF 30%);
+      box-shadow: var(--shadow-md);
+    }
+    .price-badge {
+      position: absolute;
+      top: -12px;
+      right: 24px;
+      background: var(--accent);
+      color: #FFFFFF;
+      font-family: var(--fm);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: var(--r-full);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .price-name {
+      font-family: var(--fd);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .price-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .price-amount {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin: 10px 0;
+    }
+    .price-num {
+      font-family: var(--fd);
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .price-cadence {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 10px 0 20px;
+    }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .feature-check {
+      width: 16px;
+      height: 16px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* Founder Creds Banner */
+    .founder-banner {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .founder-info h3 {
+      font-family: var(--fd);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .founder-info p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid var(--line);
+      padding: 40px 0;
+      background: var(--bg-warm);
+      margin-top: auto;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+    .footer-link {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .footer-link:hover {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+<div class="site-wrapper">
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand-group">
+        <div class="brand-breadcrumb">
+          <a href="https://shindustries.co">sh. industries</a>
+          <span>/</span>
+          <a href="https://shindustries.co/products">Products</a>
+          <span>/</span>
+        </div>
+        <div class="brand-logotype">
+          <img src="assets/duck_isolated_usb.png" alt="DuckyGuard" class="duck-sprite">
+          <div class="brand-wordmark">
+            <span class="word-ducky">Ducky</span><span class="word-guard">Guard</span><span class="brand-dot">.</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="#simulator" class="nav-link">Live Demo</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#download" class="btn btn-primary">Download Free App</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container" style="display:flex; flex-direction:column; align-items:center;">
+      <div class="hero-kicker">
+        <span>●</span>
+        <span>Physical Endpoint Defense</span>
+      </div>
+      <h1 class="hero-title">Stop BadUSB attacks before the shell opens.</h1>
+      <p class="hero-subtitle">Autonomous hardware-layer HID injection defense for macOS. DuckyGuard inspects raw keystrokes from rogue USB dongles, Flipper Zero, and Rubber Ducky devices, snatching WindowServer focus into a secure containment sandbox in under 100 milliseconds.</p>
+      
+      <div class="hero-ctas">
+        <a href="#download" class="btn btn-primary btn-lg">Download Free App (macOS ARM64)</a>
+        <a href="#pricing" class="btn btn-lg">Unlock Pro Lifetime — $19</a>
+      </div>
+
+      <div class="hero-meta">
+        <span>Version 2.4.0</span>
+        <span class="meta-divider"></span>
+        <span>Universal ARM64 (Apple Silicon)</span>
+        <span class="meta-divider"></span>
+        <span>macOS 12 Monterey or later</span>
+        <span class="meta-divider"></span>
+        <span>Zero Kernel Extensions</span>
+      </div>
+
+      <!-- Live Interactive Browser Simulator -->
+      <div class="interactive-demo-wrap" id="simulator">
+        <div class="demo-chrome">
+          <div class="chrome-dots">
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+            <span class="chrome-dot"></span>
+          </div>
+          <span class="chrome-title">Interactive Threat Demonstration · DuckyGuard CoreGraphics EventTap</span>
+          <span style="font-family:var(--fm); font-size:10px; color:var(--status-ok); font-weight:700;">● LIVE ENGINE</span>
+        </div>
+        <div class="demo-body">
+          <div class="demo-controls-bar">
+            <div>
+              <span style="font-weight:700; font-size:13px;">Keystroke Dynamics Stream:</span>
+              <span style="color:var(--text-muted); font-size:12px; margin-left:6px;">Type on your keyboard or trigger a simulated BadUSB injection</span>
+            </div>
+            <button class="btn btn-primary" id="btnSimTrigger">Inject Flipper BadUSB (120 CPS)</button>
+          </div>
+
+          <div class="demo-canvas-box">
+            <canvas id="webDemoCanvas"></canvas>
+            <span style="position:absolute; top:8px; left:12px; font-family:var(--fm); font-size:10px; color:var(--text-subtle);">VELOCITY (CHARS/S)</span>
+            <span style="position:absolute; top:32%; right:12px; font-family:var(--fm); font-size:10px; color:var(--status-error); font-weight:700;">MACHINE THRESHOLD 20.0 CPS</span>
+            <span style="position:absolute; bottom:8px; right:12px; font-family:var(--fm); font-size:10px; color:var(--text-subtle);">ROLLING 60 FPS STREAM</span>
+          </div>
+
+          <div class="demo-log-strip">
+            <span id="demoStatusMsg">Status: Nominal. Keystroke telemetry clean. Zero rogue HID keyboards detected.</span>
+            <span style="font-family:var(--fm); font-weight:700; color:var(--accent);" id="demoCpsVal">0.0 CPS</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section class="section" id="architecture">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-kicker">Multi-Layer Interception</div>
+        <h2 class="section-title">Engineered to outrun microsecond keystrokes.</h2>
+        <p class="section-desc">Hardware injection attacks rely on the operating system blindly trusting any device that identifies as a human keyboard. DuckyGuard breaks that trust assumption.</p>
+      </div>
+
+      <div class="arch-grid">
+        <div class="arch-card">
+          <span class="arch-num">01 / IOKIT SENTINEL</span>
+          <h3 class="arch-title">USB Hardware Bus Sweeper</h3>
+          <p class="arch-desc">Continuously polls macOS IOKit hardware controller registries. Correlates external keyboard attachment timestamps with immediate typing activity, flagging devices that begin burst typing within seconds of enumeration.</p>
+        </div>
+
+        <div class="arch-card">
+          <span class="arch-num">02 / BIOMETRIC HEURISTICS</span>
+          <h3 class="arch-title">Keystroke Dynamics & Jitter</h3>
+          <p class="arch-desc">Evaluates rolling typing speed (CPS) against human inter-keystroke interval (IKI) timing variance. Microcontroller delay loops flatline near 0ms jitter; human key spamming naturally generates high biomechanical entropy.</p>
+        </div>
+
+        <div class="arch-card">
+          <span class="arch-num">03 / ACTIVE CONTAINMENT</span>
+          <h3 class="arch-title">Focus-Stealing Decoy Sink</h3>
+          <p class="arch-desc">When an anomaly confidence exceeds threshold, DuckyGuard instantly seizes WindowServer focus into a secure containment sandbox. Keystrokes are sunk harmlessly to disk before commands can reach Terminal or bash.</p>
+        </div>
+
+        <div class="arch-card">
+          <span class="arch-num">04 / THREAT SYNTHESIS</span>
+          <h3 class="arch-title">Automated YARA & MITRE Mapping</h3>
+          <p class="arch-desc">Captured payloads are parsed for malicious shell patterns, reverse shells, and download cradles. The forensic analyzer automatically maps MITRE ATT&CK TTPs (T1200, T1059.001) and compiles deployable YARA rules.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="section" id="pricing" style="background:var(--bg-warm);">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-kicker">Transparent Pricing</div>
+        <h2 class="section-title">Free core defense. Cheap lifetime pro.</h2>
+        <p class="section-desc">Physical security should be accessible to everyone. Protect your machine for free, or unlock advanced forensic capabilities with a simple one-time payment. Zero subscriptions.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Free Community Edition -->
+        <div class="price-card">
+          <div class="price-name">Community Edition</div>
+          <div class="price-desc">Complete real-time endpoint defense for individual developers and students.</div>
+          
+          <div class="price-amount">
+            <span class="price-num">$0</span>
+            <span class="price-cadence">Free forever</span>
+          </div>
+
+          <ul class="feature-list">
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Real-time HID keystroke injection detection</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Focus-stealing Decoy Quarantine Sandbox</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Local raw capture logging (/captures)</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>macOS Menu Bar companion & native app</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Unlimited local keystroke monitoring</span>
+            </li>
+          </ul>
+
+          <a href="#download" class="btn" style="width:100%; justify-content:center;">Download Free App</a>
+        </div>
+
+        <!-- Pro Lifetime Edition -->
+        <div class="price-card featured">
+          <span class="price-badge">One-Time Lifetime</span>
+          <div class="price-name">DuckyGuard Pro</div>
+          <div class="price-desc">For security researchers, incident responders, and hardware penetration testers.</div>
+
+          <div class="price-amount">
+            <span class="price-num">$19</span>
+            <span class="price-cadence">One-time payment · Lifetime access</span>
+          </div>
+
+          <ul class="feature-list">
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span><strong>Everything in Community Edition</strong></span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Automated YARA rule synthesis compiler</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>MITRE ATT&CK Matrix enterprise triage reports</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Raw packet hex dump viewer & PCAP export</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Hardware USB Whitelist Manager (Device locking)</span>
+            </li>
+            <li class="feature-item">
+              <svg class="feature-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Priority binary releases & lifetime updates</span>
+            </li>
+          </ul>
+
+          <a href="https://buy.stripe.com/duckyguard-pro" class="btn btn-primary" style="width:100%; justify-content:center;">Get Pro Lifetime Access — $19</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download & Founder Section -->
+  <section class="section" id="download">
+    <div class="container" style="display:flex; flex-direction:column; gap:40px;">
+      
+      <!-- Download Box -->
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); padding:48px; text-align:center; box-shadow:var(--shadow-md); display:flex; flex-direction:column; align-items:center;">
+        <img src="assets/duck_isolated_usb.png" alt="DuckyGuard." style="width:64px; height:72px; object-fit:contain; image-rendering:pixelated; margin-bottom:16px;">
+        <h2 style="font-family:var(--fd); font-size:32px; font-weight:800; color:var(--text); margin-bottom:10px;">Download DuckyGuard for macOS</h2>
+        <p style="font-size:15px; color:var(--text-muted); max-width:540px; margin-bottom:24px;">Compiled native binary for Apple Silicon (M1/M2/M3/M4). Zero background telemetry, zero cloud dependencies, pure local execution.</p>
+
+        <a href="https://github.com/stevenhainley/DuckyGuard/releases/latest/download/DuckyGuard.dmg" class="btn btn-primary btn-lg" style="margin-bottom:16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Download DuckyGuard.dmg (ARM64)</span>
+        </a>
+
+        <span style="font-family:var(--fm); font-size:11px; color:var(--text-subtle);">SHA256: d8f39b62a... · Verified for macOS Monterey, Ventura, Sonoma, Sequoia</span>
+      </div>
+
+      <!-- Founder Banner -->
+      <div class="founder-banner">
+        <div class="founder-info">
+          <h3>Built by Steven Hainley · sh. industries</h3>
+          <p>Cybersecurity student at Worcester Polytechnic Institute (WPI) with a minor in Law and Technology. DuckyGuard was created to solve the fundamental flaw in operating system hardware trust: why should your computer blindly believe a rogue $3 microcontroller is a human?</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <span>DuckyGuard. a product by <a href="https://shindustries.co" style="color:var(--text); text-decoration:none; font-weight:600;">sh. industries</a> · Engineered by Steven Hainley</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://shindustries.co/products" class="footer-link">All Products</a>
+        <a href="https://github.com/stevenhainley/DuckyGuard" class="footer-link">GitHub</a>
+        <a href="https://stevenhainley.com" class="footer-link">stevenhainley.com</a>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// --- Interactive In-Browser Live Threat Simulator ---
+const canvas = document.getElementById("webDemoCanvas");
+const ctx = canvas.getContext("2d");
+const btnSimTrigger = document.getElementById("btnSimTrigger");
+const demoStatusMsg = document.getElementById("demoStatusMsg");
+const demoCpsVal = document.getElementById("demoCpsVal");
+
+let chartPoints = new Array(70).fill(0.1);
+let currentCps = 0.0;
+
+function resizeDemo() {
+  canvas.width = canvas.parentElement.clientWidth;
+  canvas.height = canvas.parentElement.clientHeight;
+}
+window.addEventListener("resize", resizeDemo);
+resizeDemo();
+
+// Rolling loop
+setInterval(() => {
+  const v = currentCps > 0 ? currentCps : (Math.random() * 0.15);
+  chartPoints.push(v);
+  chartPoints.shift();
+  currentCps *= 0.86;
+  if (currentCps < 0.2) currentCps = 0.0;
+  demoCpsVal.textContent = `${(chartPoints[chartPoints.length-1]).toFixed(1)} CPS`;
+}, 80);
+
+function drawDemo() {
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Grid
+  ctx.strokeStyle = "rgba(0,0,0,0.04)";
+  ctx.lineWidth = 1;
+  for (let y = 0; y < h; y += 30) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+  for (let x = 0; x < w; x += 45) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+
+  // Redline (20 CPS)
+  const redY = h * 0.35;
+  ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(0, redY); ctx.lineTo(w, redY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Wave
+  ctx.strokeStyle = "#FF6B00";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  const step = w / (chartPoints.length - 1);
+  const maxVal = 50.0;
+  for (let i = 0; i < chartPoints.length; i++) {
+    const val = Math.min(chartPoints[i], maxVal);
+    const y = h - (val / maxVal * (h - 20)) - 10;
+    if (i === 0) ctx.moveTo(0, y);
+    else ctx.lineTo(i * step, y);
+  }
+  ctx.stroke();
+
+  // Gradient under curve
+  ctx.lineTo(w, h);
+  ctx.lineTo(0, h);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, "rgba(255, 107, 0, 0.12)");
+  grad.addColorStop(1, "rgba(255, 184, 0, 0.01)");
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  requestAnimationFrame(drawDemo);
+}
+requestAnimationFrame(drawDemo);
+
+// Trigger Test
+btnSimTrigger.addEventListener("click", () => {
+  currentCps = 38.5;
+  demoStatusMsg.innerHTML = "<strong style='color:#EF4444;'>[ALARM] BadUSB Injection Intercepted!</strong> Sinking rogue keystrokes into Decoy Quarantine...";
+  setTimeout(() => {
+    demoStatusMsg.textContent = "Status: Interception complete. Payload sandboxed. Terminal unaffected.";
+  }, 2200);
+});
+
+// Capture keyboard typing on page
+window.addEventListener("keydown", (e) => {
+  if (e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+    currentCps += 2.5;
+    if (currentCps > 18.0) currentCps = 18.0;
+    demoStatusMsg.textContent = "Status: Human keystroke entropy detected. Nominal variance.";
+  }
+});
+</script>
+</body>
+</html>
