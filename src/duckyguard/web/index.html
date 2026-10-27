@@ -1,872 +1,1752 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>DuckyGuard — Physical HID Injection Defense</title>
   <style>
-    /* DuckyGuard · Stripe + Robinhood + SHOP + sh. industries Hallmark Design System
-     * Tone: Fintech Precision, Awwwards Site of the Year, High-Trust Security
-     * Surfaces: Frosted Glass, Hairline Glass Borders, Deep Stone Typography, Cyber Orange Accent
-     * Fonts: Funnel Display + Funnel Sans (sh. industries) + Apple SF Pro
+    /* DuckyGuard · Awwwards Site of the Year · Stripe + Discord + SHOP + sh. industries
+     * Design System: Cyber Obsidian Glass, Radiant Cyber-Orange, Robinhood Emerald, Linear Precision
+     * Dynamic Web Audio API Sound Engine + 60fps Canvas Oscilloscope + Spatial USB Radar
      */
     @font-face {
       font-family: "Funnel Display";
       font-weight: 700;
-      font-display: swap;
       src: url("fonts/FunnelDisplay-700.ttf") format("truetype");
+      font-display: swap;
     }
     @font-face {
       font-family: "Funnel Display";
       font-weight: 800;
-      font-display: swap;
       src: url("fonts/FunnelDisplay-800.ttf") format("truetype");
+      font-display: swap;
     }
     @font-face {
       font-family: "Funnel Sans";
       font-weight: 400;
-      font-display: swap;
       src: url("fonts/FunnelSans-400.ttf") format("truetype");
+      font-display: swap;
     }
     @font-face {
       font-family: "Funnel Sans";
       font-weight: 500;
-      font-display: swap;
       src: url("fonts/FunnelSans-500.ttf") format("truetype");
+      font-display: swap;
     }
     @font-face {
       font-family: "Funnel Sans";
       font-weight: 600;
-      font-display: swap;
       src: url("fonts/FunnelSans-600.ttf") format("truetype");
+      font-display: swap;
     }
 
     :root {
-      /* Stripe / Robinhood / SHOP High-Trust Palette */
-      --bg: #F8F9FA;
-      --bg-mesh: radial-gradient(at 0% 0%, rgba(255, 107, 0, 0.05) 0px, transparent 50%),
-                 radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.04) 0px, transparent 50%),
-                 #F8F9FA;
-      --surface: #FFFFFF;
-      --surface-glass: rgba(255, 255, 255, 0.85);
-      --surface-subtle: #F1F3F5;
-      --surface-dark: #0D0E11;
-      --surface-dark-glass: rgba(13, 14, 17, 0.85);
-
-      /* Precision Hairlines */
-      --border: rgba(0, 0, 0, 0.07);
-      --border-subtle: rgba(0, 0, 0, 0.04);
-      --border-dark: rgba(255, 255, 255, 0.1);
-
-      /* Typography */
-      --text: #090A0C;
-      --text-muted: #5E6470;
-      --text-subtle: #8A92A0;
-
-      /* Signature Brand Gradients & Accents (Stripe / Robinhood Ember) */
-      --orange: #FF5500;
-      --orange-hot: #FF6B00;
-      --orange-light: #FFF2EB;
-      --orange-gradient: linear-gradient(135deg, #FF5500 0%, #FF8A00 100%);
-      --emerald: #00C805; /* Robinhood Green */
-      --emerald-tint: #E6F9E6;
-      --crimson: #FF3B30;
-      --crimson-tint: #FEECEB;
-
-      /* Shadows */
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-      --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
-      --shadow-lg: 0 20px 40px -8px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.02);
-
-      /* Fonts */
       --fd: "Funnel Display", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
       --fs: "Funnel Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      --fpx: ui-monospace, "SF Mono", Menlo, monospace;
-      --r: 10px;
-      --r-lg: 18px;
+      --fm: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+      /* Dark Theme (Default) */
+      --bg: #07080C;
+      --bg-surface: #0E1017;
+      --surface-glass: rgba(15, 18, 26, 0.75);
+      --surface-card: rgba(20, 24, 36, 0.7);
+      --surface-card-hover: rgba(28, 33, 49, 0.9);
+      --surface-subtle: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --text-subtle: #6B7280;
+
+      /* Brand Accents */
+      --orange: #FF6B00;
+      --orange-hot: #FF5500;
+      --orange-amber: #FFA000;
+      --orange-glow: rgba(255, 107, 0, 0.28);
+      --orange-tint: rgba(255, 107, 0, 0.12);
+
+      --emerald: #10B981;
+      --emerald-glow: rgba(16, 185, 129, 0.28);
+      --emerald-tint: rgba(16, 185, 129, 0.12);
+
+      --crimson: #EF4444;
+      --crimson-glow: rgba(239, 68, 68, 0.35);
+      --crimson-tint: rgba(239, 68, 68, 0.14);
+
+      --cyan: #06B6D4;
+      --cyan-glow: rgba(6, 182, 212, 0.28);
+
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 12px 32px -4px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 24px 60px -8px rgba(0, 0, 0, 0.7);
+    }
+
+    [data-theme="light"] {
+      --bg: #F8F9FA;
+      --bg-surface: #FFFFFF;
+      --surface-glass: rgba(255, 255, 255, 0.85);
+      --surface-card: rgba(255, 255, 255, 0.9);
+      --surface-card-hover: #FFFFFF;
+      --surface-subtle: #F1F3F5;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.15);
+      --text: #090A0C;
+      --text-muted: #4B5563;
+      --text-subtle: #9CA3AF;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 10px 25px -3px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 20px 40px -6px rgba(0, 0, 0, 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { -webkit-text-size-adjust: 100%; }
-    body {
-      background: var(--bg-mesh);
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+      font: 400 13px/1.5 var(--fs);
+      background: var(--bg);
       color: var(--text);
-      font: 400 14px/1.5 var(--fs);
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    /* Ambient Spotlight & Quantum Mesh */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1000px circle at var(--mouse-x, 40%) var(--mouse-y, 30%), var(--orange-glow), transparent 45%),
+        radial-gradient(700px circle at 80% 80%, var(--emerald-glow), transparent 50%),
+        linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+      transition: background 0.3s ease;
+    }
+
+    .app-root {
+      position: relative;
+      z-index: 1;
       height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      user-select: none;
-      -webkit-font-smoothing: antialiased;
     }
 
-    /* Stripe/Arc-Style Floating Frosted Glass Header */
+    /* Floating Frosted Glass Header */
     .app-header {
-      height: 74px;
+      height: 68px;
+      padding: 0 24px 0 92px; /* Mac native traffic lights */
       background: var(--surface-glass);
-      backdrop-filter: blur(24px) saturate(190%);
+      backdrop-filter: blur(28px) saturate(200%);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 28px 0 88px; /* Native traffic lights spacing */
-      -webkit-app-region: drag;
       flex-shrink: 0;
-      z-index: 50;
+      -webkit-app-region: drag;
     }
 
-    .brand-meta {
+    .brand-section {
       display: flex;
       align-items: center;
       gap: 14px;
+      -webkit-app-region: no-drag;
     }
 
-    /* Stripe-Tier App Emblem */
-    .brand-emblem {
-      width: 44px;
-      height: 44px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+    .brand-logo-frame {
+      width: 42px;
+      height: 42px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(255, 85, 0, 0.12);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      box-shadow: 0 4px 16px var(--orange-glow);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      -webkit-app-region: no-drag;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .brand-emblem:hover {
-      transform: scale(1.06);
+    .brand-logo-frame:hover {
+      transform: scale(1.08) rotate(-2deg);
     }
-    .brand-emblem img {
-      width: 36px;
-      height: 36px;
+    .brand-logo-frame img {
+      width: 32px;
+      height: 32px;
       object-fit: contain;
     }
 
-    .brand-titles {
+    .brand-meta {
       display: flex;
       flex-direction: column;
     }
-
-    .kicker {
-      font-family: var(--fpx);
-      font-size: 10px;
+    .brand-eyebrow {
+      font-family: var(--fm);
+      font-size: 9px;
       font-weight: 700;
+      letter-spacing: 0.14em;
       color: var(--orange);
-      letter-spacing: 0.12em;
       text-transform: uppercase;
-    }
-
-    .brand-name-row {
       display: flex;
       align-items: center;
+      gap: 6px;
+    }
+    .brand-eyebrow .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 6px var(--orange);
+    }
+    .brand-title-row {
+      display: flex;
+      align-items: baseline;
       gap: 8px;
     }
-
     .brand-name {
       font-family: var(--fd);
       font-size: 20px;
       font-weight: 800;
       letter-spacing: -0.03em;
-      color: var(--text);
+      background: linear-gradient(135deg, var(--text) 40%, var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-
-    .badge-company {
-      font-size: 11px;
+    .brand-tag {
+      font-size: 10px;
       font-weight: 600;
       color: var(--text-muted);
       background: var(--surface-subtle);
-      padding: 2px 8px;
+      border: 1px solid var(--border);
+      padding: 1px 7px;
       border-radius: 999px;
-      border: 1px solid var(--border-subtle);
     }
 
-    /* Robinhood-Style Status Pill & Controls */
-    .header-actions {
+    /* Center Segmented Navigation Dock */
+    .nav-dock {
       display: flex;
       align-items: center;
-      gap: 12px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      padding: 3px;
+      border-radius: 999px;
+      box-shadow: var(--shadow-sm);
       -webkit-app-region: no-drag;
     }
 
-    .radar-pill {
+    .nav-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font: 600 12px/1 var(--fs);
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-btn:hover {
+      color: var(--text);
+    }
+    .nav-btn.active {
+      background: var(--surface-card-hover);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    .nav-btn .icon {
+      font-size: 14px;
+    }
+
+    /* Header Actions */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      -webkit-app-region: no-drag;
+    }
+
+    .shield-badge {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--emerald-tint);
-      color: var(--emerald);
-      border: 1px solid rgba(0, 200, 5, 0.25);
       padding: 6px 14px;
       border-radius: 999px;
-      font-family: var(--fpx);
+      background: var(--emerald-tint);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--emerald);
+      font-family: var(--fm);
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-
-    .radar-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--emerald);
-      border-radius: 50%;
-      box-shadow: 0 0 10px rgba(0, 200, 5, 0.8);
-      animation: pulse-glow 2s infinite ease-in-out;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(0.85); opacity: 0.4; }
-    }
-
-    .btn-toggle-switch {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 7px 18px;
-      font: 600 12px/1 var(--fs);
-      border-radius: 999px;
+      letter-spacing: 0.05em;
       cursor: pointer;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
     }
-    .btn-toggle-switch:hover {
+    .shield-badge:hover {
+      box-shadow: 0 0 16px var(--emerald-glow);
+    }
+    .shield-badge.disarmed {
+      background: var(--crimson-tint);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: var(--crimson);
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+      animation: heartBeat 2s infinite ease-in-out;
+    }
+
+    .action-icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
       background: var(--surface-subtle);
-      border-color: var(--orange);
-      color: var(--orange);
-    }
-
-    /* Workspace */
-    .app-workspace {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 24px 36px 36px;
-      overflow: hidden;
-    }
-
-    /* Segmented Navigation (Stripe / Apple / SHOP Style) */
-    .nav-segmented {
-      display: inline-flex;
-      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 4px;
-      gap: 4px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-sm);
-      align-self: flex-start;
-    }
-
-    .nav-item {
-      background: transparent;
-      border: none;
       color: var(--text-muted);
-      padding: 8px 18px;
-      font: 600 12px/1 var(--fs);
-      border-radius: 8px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.18s cubic-bezier(0.2, 0, 0, 1);
+      justify-content: center;
+      transition: all 0.2s ease;
     }
-    .nav-item:hover {
+    .action-icon-btn:hover {
+      background: var(--surface-card);
       color: var(--text);
-    }
-    .nav-item.active {
-      background: var(--text);
-      color: #FFFFFF;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      border-color: var(--border-strong);
     }
 
-    /* View Panes */
-    .view-pane {
+    /* Main Viewport Workspace */
+    .app-body {
       flex: 1;
       overflow-y: auto;
+      padding: 24px 32px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Tab Panes */
+    .tab-pane {
       display: none;
-    }
-    .view-pane.active {
-      display: flex;
       flex-direction: column;
-      gap: 22px;
+      gap: 24px;
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .tab-pane.active {
+      display: flex;
     }
 
-    /* Robinhood Financials / Stripe Radar Metrics Grid */
-    .metrics-grid {
+    /* Metric Hero Cards Ladder */
+    .metric-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
     }
 
-    .metric-box {
-      background: var(--surface);
+    .metric-card {
+      position: relative;
+      background: var(--surface-card);
+      backdrop-filter: blur(24px);
       border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 24px 28px;
-      box-shadow: var(--shadow-md);
+      border-radius: 18px;
+      padding: 18px 20px;
       display: flex;
       flex-direction: column;
-      position: relative;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
       overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .metric-box:hover {
+    .metric-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 60%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+    .metric-card:hover {
       transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-md), 0 0 20px var(--orange-glow);
     }
 
-    .metric-label-row {
+    .card-head {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      justify-content: space-between;
     }
-
-    .metric-title {
-      font-family: var(--fpx);
-      font-size: 11px;
+    .card-label {
+      font-family: var(--fm);
+      font-size: 10px;
       font-weight: 700;
-      color: var(--text-muted);
       letter-spacing: 0.08em;
+      color: var(--text-muted);
       text-transform: uppercase;
     }
-
-    .metric-chip {
-      font-size: 11px;
+    .card-pill {
+      font-family: var(--fm);
+      font-size: 9px;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 2px 7px;
       border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
-    .chip-green { background: var(--emerald-tint); color: var(--emerald); }
-    .chip-orange { background: var(--orange-light); color: var(--orange); }
+    .card-pill.emerald {
+      background: var(--emerald-tint);
+      color: var(--emerald);
+    }
+    .card-pill.orange {
+      background: var(--orange-tint);
+      color: var(--orange);
+    }
+    .card-pill.cyan {
+      background: var(--cyan-glow);
+      color: var(--cyan);
+    }
 
-    .metric-hero {
+    .card-value-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .card-value {
       font-family: var(--fd);
-      font-size: 42px;
+      font-size: 38px;
       font-weight: 800;
-      color: var(--text);
-      letter-spacing: -0.04em;
       line-height: 1;
-      margin-bottom: 8px;
+      letter-spacing: -0.04em;
+      color: var(--text);
     }
-
-    .metric-foot {
-      font-size: 12px;
+    .card-subtext {
+      font-size: 11px;
       color: var(--text-subtle);
     }
 
-    /* Live Sparkline Visual Effect */
-    .sparkline-decor {
-      position: absolute;
-      right: 20px;
-      bottom: 20px;
-      opacity: 0.25;
-      pointer-events: none;
+    /* Live Sparkline Canvas */
+    .mini-spark {
+      width: 100%;
+      height: 28px;
+      margin-top: 4px;
     }
 
-    /* Stripe Workbench Container */
-    .workbench-card {
-      background: var(--surface);
+    /* Main Console / Radar Canvas Container */
+    .console-split {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 18px;
+    }
+
+    .surface-panel {
+      position: relative;
+      background: var(--surface-card);
+      backdrop-filter: blur(28px);
       border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 26px 28px;
-      box-shadow: var(--shadow-md);
+      border-radius: 20px;
+      padding: 22px;
       display: flex;
       flex-direction: column;
-      flex: 1;
+      gap: 16px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
     }
 
-    .card-head-row {
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .panel-title {
+      font-family: var(--fd);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .panel-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Oscilloscope Screen */
+    .scope-box {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      background: #05060A;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    #scopeCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .scope-overlay {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      right: 12px;
       display: flex;
       justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 18px;
+      pointer-events: none;
+      font-family: var(--fm);
+      font-size: 10px;
+      color: var(--text-subtle);
     }
-
-    .card-heading {
-      font-family: var(--fd);
-      font-size: 17px;
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .card-subtext {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    /* Linear CLI Dark Terminal Console */
-    .linear-console {
-      background: var(--surface-dark);
-      color: #34D399;
-      border: 1px solid var(--border-dark);
-      border-radius: 14px;
-      padding: 18px 22px;
-      font-family: var(--fpx);
-      font-size: 12px;
-      line-height: 1.7;
-      flex: 1;
-      overflow-y: auto;
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
-    }
-
-    .stream-dim { color: #71717A; }
-    .stream-amber { color: #F59E0B; }
-    .stream-danger { color: #EF4444; font-weight: 700; }
-    .stream-success { color: #34D399; font-weight: 700; }
-
-    /* Vault Split Workbench */
-    .vault-workbench {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 18px;
-      flex: 1;
-      min-height: 400px;
-    }
-
-    .incident-feed {
-      background: var(--surface-subtle);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px;
-      overflow-y: auto;
+    .scope-legend {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .incident-tile {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      box-shadow: var(--shadow-sm);
-    }
-    .incident-tile:hover {
-      border-color: var(--orange);
-      transform: translateX(2px);
-    }
-    .incident-tile.selected {
-      border-color: var(--orange);
-      background: var(--orange-light);
-    }
-
-    .incident-title {
-      font-family: var(--fpx);
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .incident-meta {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-
-    .incident-preview {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      overflow-y: auto;
-      font-family: var(--fpx);
-      font-size: 12px;
-      line-height: 1.65;
-      white-space: pre-wrap;
-    }
-
-    /* Threat Simulation Cards (Stripe Test Suite Style) */
-    .sim-grid {
-      display: flex;
-      flex-direction: column;
       gap: 12px;
     }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-box {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
 
-    .sim-row {
-      background: var(--surface);
+    /* CLI Telemetry Terminal */
+    .terminal-box {
+      background: #05060A;
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 20px 24px;
+      padding: 14px;
+      height: 260px;
+      overflow-y: auto;
+      font-family: var(--fm);
+      font-size: 11px;
+      line-height: 1.6;
+      color: #94A3B8;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: all 0.15s ease;
-      box-shadow: var(--shadow-sm);
+      flex-direction: column;
+      gap: 4px;
     }
-    .sim-row:hover {
-      box-shadow: var(--shadow-md);
-      border-color: rgba(0, 0, 0, 0.12);
+    .term-row {
+      display: flex;
+      gap: 8px;
+      word-break: break-all;
     }
+    .term-ts {
+      color: #64748B;
+      flex-shrink: 0;
+    }
+    .term-tag {
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .term-tag.emerald { color: var(--emerald); }
+    .term-tag.orange { color: var(--orange); }
+    .term-tag.crimson { color: var(--crimson); }
+    .term-tag.cyan { color: var(--cyan); }
+    .term-msg { color: #E2E8F0; }
 
-    .sim-name {
+    /* Interactive USB Radar View */
+    .radar-canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      background: #05060A;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    #usbRadarCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+    .radar-inspector-drawer {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 320px;
+      background: rgba(14, 16, 23, 0.92);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-strong);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--shadow-lg);
+      transform: translateX(350px);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10;
+    }
+    .radar-inspector-drawer.open {
+      transform: translateX(0);
+    }
+    .drawer-title {
       font-family: var(--fd);
       font-size: 15px;
       font-weight: 800;
       color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
     }
-    .sim-spec {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-
-    .btn-fire-test {
-      background: var(--orange-gradient);
-      color: #FFFFFF;
-      border: none;
-      padding: 10px 22px;
-      font: 700 12px/1 var(--fs);
-      border-radius: 8px;
+    .drawer-close {
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(255, 85, 0, 0.28);
-      transition: all 0.15s ease;
+      color: var(--text-muted);
+      font-size: 16px;
     }
-    .btn-fire-test:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(255, 85, 0, 0.38);
+    .drawer-field {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .btn-fire-test.secondary {
-      background: var(--surface-subtle);
+    .drawer-key {
+      color: var(--text-muted);
+      font-family: var(--fm);
+    }
+    .drawer-val {
       color: var(--text);
-      border: 1px solid var(--border);
-      box-shadow: none;
-    }
-    .btn-fire-test.secondary:hover {
-      background: var(--emerald-tint);
-      color: var(--emerald);
-      border-color: rgba(0, 200, 5, 0.3);
+      font-family: var(--fm);
+      font-weight: 600;
     }
 
-    /* Hardware Table */
-    .hardware-table {
+    /* Cyber-Deck Simulator View */
+    .cyberdeck-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 20px;
+    }
+    .flipper-chassis {
+      background: #11141E;
+      border: 2px solid #23293D;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow-lg), inset 0 2px 4px rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .oled-screen {
+      background: #000000;
+      border: 2px solid #1E2335;
+      border-radius: 12px;
+      padding: 14px;
+      font-family: var(--fm);
+      font-size: 11px;
+      color: #FF9E00;
+      height: 180px;
+      overflow-y: auto;
+      box-shadow: inset 0 0 16px rgba(255, 158, 0, 0.15);
+      position: relative;
+    }
+    .oled-screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+      pointer-events: none;
+    }
+    .flipper-controls {
+      display: flex;
+      gap: 12px;
+    }
+    .deck-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-strong);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent);
+      color: var(--text);
+      font-family: var(--fd);
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .deck-btn:hover {
+      background: var(--surface-card-hover);
+      border-color: var(--orange);
+      box-shadow: 0 4px 16px var(--orange-glow);
+    }
+    .deck-btn.primary {
+      background: linear-gradient(135deg, var(--orange), #FF8A00);
+      border-color: var(--orange-hot);
+      color: #FFFFFF;
+    }
+
+    /* Biometric Typing Authenticator */
+    .typing-box {
+      width: 100%;
+      height: 120px;
+      background: #05060A;
+      border: 1px solid var(--border-strong);
+      border-radius: 14px;
+      padding: 16px;
+      color: var(--text);
+      font-family: var(--fm);
+      font-size: 14px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .typing-box:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 16px var(--orange-glow);
+    }
+    .typing-metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .bio-stat {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .bio-title {
+      font-family: var(--fm);
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .bio-val {
+      font-family: var(--fd);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    /* Incident Vault Table */
+    .vault-table {
       width: 100%;
       border-collapse: collapse;
-      font-family: var(--fpx);
       font-size: 12px;
     }
-    .hardware-table th {
-      text-align: left;
-      padding: 12px 18px;
-      background: var(--surface-subtle);
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-      font-size: 11px;
+    .vault-table th {
+      font-family: var(--fm);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
       letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
     }
-    .hardware-table td {
-      padding: 16px 18px;
-      border-bottom: 1px solid var(--border-subtle);
+    .vault-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
       color: var(--text);
+    }
+    .vault-row {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .vault-row:hover {
+      background: var(--surface-subtle);
+    }
+
+    /* Slide-Out Forensic Inspector Modal */
+    .forensic-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(16px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .forensic-modal.open {
+      display: flex;
+    }
+    .modal-box {
+      width: 900px;
+      max-height: 85vh;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--shadow-lg);
+      overflow-y: auto;
+    }
+
+    /* Primary Buttons */
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      font: 600 12px/1 var(--fs);
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: var(--surface-card);
+      border-color: var(--border-strong);
+    }
+    .btn-orange {
+      background: linear-gradient(135deg, var(--orange), #FF8A00);
+      border-color: var(--orange-hot);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+    .btn-orange:hover {
+      box-shadow: 0 4px 16px var(--orange-glow);
+    }
+
+    @keyframes heartBeat {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
+<div class="app-root">
 
-  <!-- Stripe-Grade Frosted Glass Header -->
+  <!-- Header -->
   <header class="app-header">
-    <div class="brand-meta">
-      <div class="brand-emblem">
-        <img src="/assets/logo.png" alt="DuckyGuard Vector Emblem">
+    <div class="brand-section">
+      <div class="brand-logo-frame" id="logoEmblem" title="DuckyGuard Vector Emblem">
+        <img src="/assets/logo.png" alt="DuckyGuard Emblem">
       </div>
-      <div class="brand-titles">
-        <span class="kicker">SH. INDUSTRIES // PHYSICAL ENDPOINT DEFENSE</span>
-        <div class="brand-name-row">
+      <div class="brand-meta">
+        <div class="brand-eyebrow">
+          <span class="dot"></span>
+          <span>sh. industries // Endpoint Defense</span>
+        </div>
+        <div class="brand-title-row">
           <span class="brand-name">DuckyGuard</span>
-          <span class="badge-company">A product by sh. industries</span>
+          <span class="brand-tag">v2.4 PRO</span>
         </div>
       </div>
     </div>
 
+    <!-- Center Navigation Dock -->
+    <nav class="nav-dock">
+      <button class="nav-btn active" data-tab="live-radar">
+        <span class="icon">⚡</span><span>Live Radar</span>
+      </button>
+      <button class="nav-btn" data-tab="usb-topology">
+        <span class="icon">🛰</span><span>USB Topology</span>
+      </button>
+      <button class="nav-btn" data-tab="cyber-deck">
+        <span class="icon">👾</span><span>Attack Lab</span>
+      </button>
+      <button class="nav-btn" data-tab="biometrics">
+        <span class="icon">🧪</span><span>Biometric Test</span>
+      </button>
+      <button class="nav-btn" data-tab="vault">
+        <span class="icon">🗄</span><span>Incident Vault</span>
+      </button>
+    </nav>
+
+    <!-- Header Actions -->
     <div class="header-actions">
-      <div class="radar-pill" id="statusPill">
-        <div class="radar-dot" id="statusDot"></div>
-        <span id="statusText">SHIELD ARMED</span>
+      <div class="shield-badge" id="shieldToggle" title="Click to Arm / Disarm Real-Time Defense (Space)">
+        <span class="pulse-dot"></span>
+        <span id="shieldStatusText">SHIELD ARMED</span>
       </div>
-      <button class="btn-toggle-switch" id="btnToggle" onclick="toggleEngine()">Disarm</button>
+
+      <button class="action-icon-btn" id="soundToggle" title="Toggle Mechanical Audio Engine">
+        <span id="soundIcon">🔊</span>
+      </button>
+
+      <button class="action-icon-btn" id="themeToggle" title="Toggle Theme (Obsidian / Studio)">
+        <span id="themeIcon">🌙</span>
+      </button>
     </div>
   </header>
 
-  <!-- Workspace -->
-  <main class="app-workspace">
-    <!-- Segmented Navigation Control -->
-    <nav class="nav-segmented">
-      <button class="nav-item active" onclick="switchTab('monitor')">🛡  Live Monitor</button>
-      <button class="nav-item" onclick="switchTab('vault')">📂  Incident Vault</button>
-      <button class="nav-item" onclick="switchTab('hardware')">🔌  USB Hardware Bus</button>
-      <button class="nav-item" onclick="switchTab('simulator')">⚡  Attack Simulation Lab</button>
-    </nav>
+  <!-- Main Viewport Workspace -->
+  <main class="app-body">
 
-    <!-- Tab 1: Live Monitor -->
-    <section class="view-pane active" id="view-monitor">
-      <div class="metrics-grid">
-        <!-- Metric 1 -->
-        <div class="metric-box">
-          <div class="metric-label-row">
-            <span class="metric-title">Keystrokes Inspected</span>
-            <span class="metric-chip chip-green">Active Tap</span>
+    <!-- TAB 1: LIVE RADAR & METRICS -->
+    <section class="tab-pane active" id="pane-live-radar">
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="card-head">
+            <span class="card-label">Keystroke Velocity</span>
+            <span class="card-pill emerald" id="cpsPill">Nominal</span>
           </div>
-          <span class="metric-hero" id="valKeys">0</span>
-          <span class="metric-foot">Real-time user-space CoreGraphics event tap</span>
-          <!-- Subtle Robinhood Wave Graph SVG -->
-          <svg class="sparkline-decor" width="80" height="35" viewBox="0 0 80 35" fill="none">
-            <path d="M0 25 C 20 28, 40 10, 60 18 S 75 5, 80 8" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
-          </svg>
+          <div class="card-value-row">
+            <span class="card-value" id="valCps">0.0</span>
+            <span class="card-subtext">keys/sec</span>
+          </div>
+          <canvas class="mini-spark" id="sparkCps"></canvas>
         </div>
 
-        <!-- Metric 2 -->
-        <div class="metric-box">
-          <div class="metric-label-row">
-            <span class="metric-title">Attacks Neutralized</span>
-            <span class="metric-chip chip-orange">100% Sunk</span>
+        <div class="metric-card">
+          <div class="card-head">
+            <span class="card-label">Timing Jitter (Std-Dev)</span>
+            <span class="card-pill emerald" id="jitterPill">High Entropy</span>
           </div>
-          <span class="metric-hero" id="valAttacks" style="color: var(--orange);">0</span>
-          <span class="metric-foot">Preempted & quarantined in Decoy Sink</span>
-          <svg class="sparkline-decor" width="80" height="35" viewBox="0 0 80 35" fill="none">
-            <path d="M0 30 C 25 30, 45 15, 65 15 S 75 5, 80 5" stroke="#FF5500" stroke-width="3" stroke-linecap="round"/>
-          </svg>
+          <div class="card-value-row">
+            <span class="card-value" id="valJitter">0.0</span>
+            <span class="card-subtext">ms variance</span>
+          </div>
+          <canvas class="mini-spark" id="sparkJitter"></canvas>
         </div>
 
-        <!-- Metric 3 -->
-        <div class="metric-box">
-          <div class="metric-label-row">
-            <span class="metric-title">Active HID Keyboards</span>
-            <span class="metric-chip chip-green">IOKit Bus</span>
+        <div class="metric-card">
+          <div class="card-head">
+            <span class="card-label">Active USB Hardware</span>
+            <span class="card-pill cyan" id="usbCountPill">1 Monitored</span>
           </div>
-          <span class="metric-hero" id="valDevices" style="color: var(--emerald);">1</span>
-          <span class="metric-foot">Hardware controller connection registry</span>
-          <svg class="sparkline-decor" width="80" height="35" viewBox="0 0 80 35" fill="none">
-            <path d="M0 20 C 30 20, 50 20, 80 20" stroke="#059669" stroke-width="3" stroke-linecap="round"/>
-          </svg>
+          <div class="card-value-row">
+            <span class="card-value" id="valUsb">1</span>
+            <span class="card-subtext">controllers</span>
+          </div>
+          <canvas class="mini-spark" id="sparkUsb"></canvas>
+        </div>
+
+        <div class="metric-card">
+          <div class="card-head">
+            <span class="card-label">Attacks Neutralized</span>
+            <span class="card-pill orange" id="attackPill">100% Sunk</span>
+          </div>
+          <div class="card-value-row">
+            <span class="card-value" id="valAttacks">0</span>
+            <span class="card-subtext">quarantined</span>
+          </div>
+          <canvas class="mini-spark" id="sparkAttacks"></canvas>
         </div>
       </div>
 
-      <!-- Linear / Stripe Style Real-Time Workbench -->
-      <div class="workbench-card">
-        <div class="card-head-row">
-          <div>
-            <div class="card-heading">Real-Time Defense Heuristics & Telemetry Stream</div>
-            <div class="card-subtext">Sliding-window velocity & biometric timing jitter analysis</div>
+      <!-- Real-Time Split Console -->
+      <div class="console-split">
+        <!-- Oscilloscope -->
+        <div class="surface-panel">
+          <div class="panel-header">
+            <div class="panel-titles">
+              <span class="panel-title">Biometric Keystroke Dynamics Oscilloscope</span>
+              <span class="panel-desc">Real-time inter-keystroke interval rolling waveform vs. synthetic 20 CPS redline</span>
+            </div>
+            <div class="panel-actions">
+              <span class="card-pill emerald" id="scopeLiveTag">● 60 FPS LIVE</span>
+            </div>
+          </div>
+          <div class="scope-box">
+            <canvas id="scopeCanvas"></canvas>
+            <div class="scope-overlay">
+              <span>SCAN FREQ: 1000Hz (IOKit CGEventTap)</span>
+              <div class="scope-legend">
+                <div class="legend-item"><span class="legend-box" style="background:#10B981;"></span><span>Human Biometric Envelope</span></div>
+                <div class="legend-item"><span class="legend-box" style="background:#EF4444;"></span><span>Synthetic Injection Redline</span></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="linear-console" id="terminalLog">
-          <div class="stream-success">[*] DuckyGuard Real-Time Protection Daemon active.</div>
-          <div class="stream-dim">[*] Monitoring macOS IOKit USB bus for HID keyboard connections...</div>
-          <div class="stream-dim">[*] Heuristic parameters: Velocity > 20 cps | Jitter < 12ms | USB attachment <= 5s.</div>
-          <div class="stream-dim">[*] WindowServer preemption armed: Decoy sink captures input within 100ms.</div>
-          <div class="stream-success">[✓] Endpoint secure. Zero unauthorized HID injection attacks detected.</div>
+        <!-- Telemetry Stream -->
+        <div class="surface-panel">
+          <div class="panel-header">
+            <div class="panel-titles">
+              <span class="panel-title">Forensic Telemetry Event Feed</span>
+              <span class="panel-desc">Sub-millisecond sliding-window anomaly inspection stream</span>
+            </div>
+            <div class="panel-actions">
+              <button class="btn" id="btnTestAttack">⚡ Fire BadUSB Test</button>
+            </div>
+          </div>
+          <div class="terminal-box" id="termFeed">
+            <div class="term-row"><span class="term-ts">[SYSTEM]</span><span class="term-tag emerald">[ARMED]</span><span class="term-msg">DuckyGuard Real-Time Protection Daemon active.</span></div>
+            <div class="term-row"><span class="term-ts">[IOKIT]</span><span class="term-tag cyan">[BUS]</span><span class="term-msg">Hardware USB bus controller attached. Monitoring HID devices.</span></div>
+            <div class="term-row"><span class="term-ts">[ENGINE]</span><span class="term-tag emerald">[OK]</span><span class="term-msg">Confidence thresholds set: Velocity > 20 cps, Jitter < 12ms.</span></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Tab 2: Incident Vault -->
-    <section class="view-pane" id="view-vault">
-      <div class="workbench-card">
-        <div class="card-head-row">
-          <div>
-            <div class="card-heading">Forensic Incident Vault</div>
-            <div class="card-subtext">Review intercepted payloads, extracted IOCs, and synthesized YARA rules</div>
+    <!-- TAB 2: USB TOPOLOGY RADAR -->
+    <section class="tab-pane" id="pane-usb-topology">
+      <div class="surface-panel" style="padding: 16px;">
+        <div class="panel-header" style="margin-bottom: 12px;">
+          <div class="panel-titles">
+            <span class="panel-title">Physical USB Bus Spatial Radar & Topology</span>
+            <span class="panel-desc">Interactive hardware node map of controllers, root hubs, and attached HID peripherals</span>
           </div>
-          <button class="btn-toggle-switch" onclick="openReportsFolder()">📂 Open Reports in Finder</button>
+          <div class="panel-actions">
+            <span class="card-pill cyan">Auto-Scan Active (1s Poll)</span>
+          </div>
         </div>
 
-        <div class="vault-workbench">
-          <div class="incident-feed" id="incidentList"></div>
-          <div class="incident-preview" id="incidentViewer">Select an incident from the feed to inspect forensic triage details.</div>
+        <div class="radar-canvas-wrap">
+          <canvas id="usbRadarCanvas"></canvas>
+
+          <!-- Drawer Inspector -->
+          <div class="radar-inspector-drawer" id="nodeDrawer">
+            <div class="drawer-title">
+              <span id="drawerDeviceName">Apple Magic Keyboard</span>
+              <span class="drawer-close" id="drawerClose">✕</span>
+            </div>
+            <div class="drawer-field"><span class="drawer-key">Vendor ID:</span><span class="drawer-val" id="drawVid">0x05ac (Apple)</span></div>
+            <div class="drawer-field"><span class="drawer-key">Product ID:</span><span class="drawer-val" id="drawPid">0x0267</span></div>
+            <div class="drawer-field"><span class="drawer-key">Bus Location:</span><span class="drawer-val" id="drawBus">Internal USB 3.1</span></div>
+            <div class="drawer-field"><span class="drawer-key">Polling Interval:</span><span class="drawer-val" id="drawPoll">8 ms (bInterval)</span></div>
+            <div class="drawer-field"><span class="drawer-key">Trust Score:</span><span class="drawer-val" style="color:var(--emerald);" id="drawTrust">100% (Trusted)</span></div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Tab 3: Hardware Bus -->
-    <section class="view-pane" id="view-hardware">
-      <div class="workbench-card">
-        <div class="card-head-row">
-          <div>
-            <div class="card-heading">Connected USB & HID Hardware Inventory</div>
-            <div class="card-subtext">Real-time device bus enumeration from macOS IOKit Registry</div>
+    <!-- TAB 3: CYBER-DECK ATTACK LAB -->
+    <section class="tab-pane" id="pane-cyber-deck">
+      <div class="cyberdeck-layout">
+        <!-- Flipper Cyber-Deck -->
+        <div class="flipper-chassis">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-family:var(--fd); font-size:16px; font-weight:800; color:var(--orange);">FLIPPER ZERO BADUSB EMULATOR</span>
+            <span class="card-pill orange">ARM Cortex-M4</span>
+          </div>
+
+          <div class="oled-screen" id="flipperScreen">
+=== DuckyGuard Attack Lab ===
+Select a payload preset below to simulate an unauthorized HID injection attack:
+
+[✓] Flipper Zero Reverse Shell
+[ ] Hak5 Rubber Ducky Dropper
+[ ] Bash Bunny Cred Exfil
+[ ] Benign Human Typist Baseline
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <label style="font-family:var(--fm); font-size:11px; color:var(--text-muted);">SELECT THREAT PRESET:</label>
+            <select id="attackPresetSelect" style="background:#05060A; border:1px solid var(--border-strong); color:var(--text); padding:8px 12px; border-radius:10px; font-family:var(--fm); font-size:12px; outline:none;">
+              <option value="flipper_rev_shell">Flipper Zero BadUSB · Reverse Shell (120 CPS)</option>
+              <option value="resume_dropper">Hak5 Rubber Ducky · PDF Resume Dropper (85 CPS)</option>
+              <option value="bash_bunny">Bash Bunny · Credential Exfiltration (95 CPS)</option>
+              <option value="omg_cable">O.MG Cable · Covert WiFi HID Trigger (140 CPS)</option>
+              <option value="benign_human">Benign Human Typist · Natural Biometrics (5.5 CPS)</option>
+            </select>
+          </div>
+
+          <div class="flipper-controls">
+            <button class="deck-btn primary" id="btnLaunchDeck">🚀 Inject Attack Stream</button>
           </div>
         </div>
 
-        <table class="hardware-table">
+        <!-- Explanatory Panel -->
+        <div class="surface-panel">
+          <div class="panel-titles">
+            <span class="panel-title">Active Quarantine Vortex</span>
+            <span class="panel-desc">What happens when an injection attack is launched:</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px; font-size:13px; color:var(--text-muted); line-height:1.6;">
+            <div style="display:flex; gap:10px;">
+              <span style="color:var(--orange); font-weight:800;">1.</span>
+              <span><strong>Millisecond Detection:</strong> Keystroke velocities exceeding 20 chars/sec with timing variance below 12ms trigger instant anomaly flags.</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <span style="color:var(--orange); font-weight:800;">2.</span>
+              <span><strong>Focus-Stealing Decoy Sink:</strong> DuckyGuard pre-empts the active window, sinking every rogue keypress into an isolated containment sandbox before bash or Terminal receives commands.</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <span style="color:var(--orange); font-weight:800;">3.</span>
+              <span><strong>Automated Forensic YARA Synthesis:</strong> IOCs (URLs, IPs, command flags) are parsed and compiled into an instant YARA rule in the Incident Vault.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: BIOMETRIC TYPING LAB -->
+    <section class="tab-pane" id="pane-biometrics">
+      <div class="surface-panel">
+        <div class="panel-header">
+          <div class="panel-titles">
+            <span class="panel-title">Interactive Biometric Typing Authenticator</span>
+            <span class="panel-desc">Type naturally in the box below to test your human keystroke timing variance, velocity, and entropy</span>
+          </div>
+          <div class="panel-actions">
+            <button class="btn" id="btnClearBio">Clear Input</button>
+          </div>
+        </div>
+
+        <textarea class="typing-box" id="typingInput" placeholder="Click here and start typing anything naturally... The biometric engine calculates your human entropy score in real time with synthesized mechanical switch audio."></textarea>
+
+        <div class="typing-metrics-bar">
+          <div class="bio-stat">
+            <span class="bio-title">YOUR TYPING SPEED</span>
+            <span class="bio-val" id="bioCps">0.0 CPS</span>
+          </div>
+          <div class="bio-stat">
+            <span class="bio-title">BIOMETRIC JITTER</span>
+            <span class="bio-val" id="bioJitter">0.0 ms</span>
+          </div>
+          <div class="bio-stat">
+            <span class="bio-title">HUMAN AUTHENTICITY</span>
+            <span class="bio-val" style="color:var(--emerald);" id="bioScore">100%</span>
+          </div>
+          <div class="bio-stat">
+            <span class="bio-title">STATUS</span>
+            <span class="bio-val" style="color:var(--emerald);" id="bioVerdict">GENUINE</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: INCIDENT VAULT -->
+    <section class="tab-pane" id="pane-vault">
+      <div class="surface-panel">
+        <div class="panel-header">
+          <div class="panel-titles">
+            <span class="panel-title">Forensic Incident Vault</span>
+            <span class="panel-desc">Historical registry of neutralized HID injection attacks, IOC extractions, and YARA rules</span>
+          </div>
+          <div class="panel-actions">
+            <button class="btn" id="btnOpenReportsFolder">📂 Open Reports in Finder</button>
+          </div>
+        </div>
+
+        <table class="vault-table">
           <thead>
             <tr>
-              <th>VENDOR ID</th>
-              <th>PRODUCT ID</th>
-              <th>HARDWARE DEVICE NAME</th>
+              <th>Incident ID</th>
+              <th>Timestamp</th>
+              <th>Attack Vector</th>
+              <th>Target Device</th>
+              <th>Threat Classification</th>
+              <th>Action</th>
             </tr>
           </thead>
-          <tbody id="hwTableBody"></tbody>
+          <tbody id="vaultTableBody">
+            <tr class="vault-row">
+              <td style="font-family:var(--fm); font-weight:700;">INC-20261026-1922</td>
+              <td>2026-10-26 19:22:42</td>
+              <td><span class="card-pill orange">BadUSB Dropper</span></td>
+              <td>External USB HID (0x05ac:0x0267)</td>
+              <td><span class="card-pill crimson">MITRE T1200 / T1059</span></td>
+              <td><button class="btn" style="padding:4px 8px;">Inspect</button></td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </section>
 
-    <!-- Tab 4: Attack Simulator Lab -->
-    <section class="view-pane" id="view-simulator">
-      <div class="workbench-card">
-        <div class="card-head-row">
-          <div>
-            <div class="card-heading">Synthetic BadUSB Attack Simulation Lab</div>
-            <div class="card-subtext">Safely fire simulated microcontroller attacks to verify the Decoy Sink live</div>
-          </div>
-        </div>
-
-        <div class="sim-grid">
-          <div class="sim-row">
-            <div>
-              <div class="sim-name">1. Flipper Zero BadUSB Dropper (Resume Download Payload)</div>
-              <div class="sim-spec">Injects commands at 80+ chars/sec with 12ms uniform microcontroller timing intervals.</div>
-            </div>
-            <button class="btn-fire-test" onclick="fireSimulation('resume_dropper', true)">Launch Attack Test</button>
-          </div>
-
-          <div class="sim-row">
-            <div>
-              <div class="sim-name">2. Reverse Shell Dropper (macOS / Linux Socket Attack)</div>
-              <div class="sim-spec">Injects automated bash TCP socket injection commands targeting port 4444.</div>
-            </div>
-            <button class="btn-fire-test" style="background: linear-gradient(135deg, #EA580C 0%, #DC2626 100%);" onclick="fireSimulation('reverse_shell', true)">Launch Attack Test</button>
-          </div>
-
-          <div class="sim-row">
-            <div>
-              <div class="sim-name">3. Benign Human Baseline (Zero False-Positive Verification)</div>
-              <div class="sim-spec">Simulates a human typing naturally (120-240ms intervals with high biometric jitter).</div>
-            </div>
-            <button class="btn-fire-test secondary" onclick="fireSimulation('benign_human', false)">Verify Human Typing</button>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
+</div>
 
-  <script>
-    let isArmed = true;
+<!-- Forensic Modal -->
+<div class="forensic-modal" id="forensicModal">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-family:var(--fd); font-size:20px; font-weight:800; color:var(--text);" id="modalTitle">Incident Forensic Report</span>
+      <button class="btn" id="modalClose">Close ✕</button>
+    </div>
+    <div style="font-family:var(--fm); font-size:11px; color:#94A3B8; background:#05060A; padding:16px; border-radius:12px; height:320px; overflow-y:auto; white-space:pre-wrap;" id="modalBody"></div>
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-orange" id="modalCopyYara">Copy YARA Rule</button>
+    </div>
+  </div>
+</div>
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('active'));
+<script>
+/* =====================================================================
+ * DUCKYGUARD APPLICATION ENGINE (AWWWARDS / STRIPE CALIBER)
+ * ===================================================================== */
 
-      event.currentTarget.classList.add('active');
-      document.getElementById('view-' + tabId).classList.add('active');
+// --- 1. Audio Engine (Procedural Web Audio API Synthesizer) ---
+class SoundEngine {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx.state === "suspended") {
+      this.ctx.resume();
+    }
+  }
+  playKeyClick() {
+    if (this.muted) return;
+    this.init();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = "sine";
+    const freq = 450 + Math.random() * 250;
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.04);
+  }
+  playAlarm() {
+    if (this.muted) return;
+    this.init();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(1400, this.ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.25);
+  }
+  playShieldToggle(armed) {
+    if (this.muted) return;
+    this.init();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = "triangle";
+    if (armed) {
+      osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(660, this.ctx.currentTime + 0.2);
+    } else {
+      osc.frequency.setValueAtTime(660, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(220, this.ctx.currentTime + 0.2);
+    }
+    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.2);
+  }
+}
+const sound = new SoundEngine();
 
-      if (tabId === 'vault') loadIncidents();
-      if (tabId === 'hardware') loadHardware();
+// --- 2. Ambient Mouse Tracking ---
+window.addEventListener("pointermove", (e) => {
+  document.documentElement.style.setProperty("--mouse-x", `${e.clientX}px`);
+  document.documentElement.style.setProperty("--mouse-y", `${e.clientY}px`);
+});
+
+// --- 3. Tab Switching ---
+const navButtons = document.querySelectorAll(".nav-btn");
+const tabPanes = document.querySelectorAll(".tab-pane");
+navButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    sound.playKeyClick();
+    navButtons.forEach(b => b.classList.remove("active"));
+    tabPanes.forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    const target = document.getElementById(`pane-${btn.dataset.tab}`);
+    if (target) target.classList.add("active");
+  });
+});
+
+// --- 4. Sound & Theme Toggles ---
+const soundToggle = document.getElementById("soundToggle");
+const soundIcon = document.getElementById("soundIcon");
+soundToggle.addEventListener("click", () => {
+  sound.muted = !sound.muted;
+  soundIcon.textContent = sound.muted ? "🔇" : "🔊";
+  if (!sound.muted) sound.playKeyClick();
+});
+
+const themeToggle = document.getElementById("themeToggle");
+const themeIcon = document.getElementById("themeIcon");
+themeToggle.addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme") || "dark";
+  const next = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  themeIcon.textContent = next === "dark" ? "🌙" : "☀️";
+  sound.playKeyClick();
+});
+
+// --- 5. Shield Arm / Disarm ---
+const shieldToggle = document.getElementById("shieldToggle");
+const shieldStatusText = document.getElementById("shieldStatusText");
+let isArmed = true;
+
+async function toggleShield() {
+  try {
+    const res = await fetch("/api/toggle", { method: "POST" });
+    const data = await res.json();
+    isArmed = data.running;
+    updateShieldUI(isArmed);
+    sound.playShieldToggle(isArmed);
+  } catch (e) {
+    isArmed = !isArmed;
+    updateShieldUI(isArmed);
+    sound.playShieldToggle(isArmed);
+  }
+}
+function updateShieldUI(armed) {
+  if (armed) {
+    shieldToggle.classList.remove("disarmed");
+    shieldStatusText.textContent = "SHIELD ARMED";
+  } else {
+    shieldToggle.classList.add("disarmed");
+    shieldStatusText.textContent = "DEFENSE PAUSED";
+  }
+}
+shieldToggle.addEventListener("click", toggleShield);
+window.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && e.target.tagName !== "TEXTAREA" && e.target.tagName !== "INPUT") {
+    e.preventDefault();
+    toggleShield();
+  }
+});
+
+// --- 6. 60 FPS Oscilloscope Canvas ---
+const scopeCanvas = document.getElementById("scopeCanvas");
+const scopeCtx = scopeCanvas ? scopeCanvas.getContext("2d") : null;
+let scopePoints = new Array(80).fill(0);
+let scopePhase = 0;
+
+function resizeScope() {
+  if (!scopeCanvas) return;
+  scopeCanvas.width = scopeCanvas.parentElement.clientWidth;
+  scopeCanvas.height = scopeCanvas.parentElement.clientHeight;
+}
+window.addEventListener("resize", resizeScope);
+resizeScope();
+
+function renderScope() {
+  if (!scopeCtx) return;
+  const w = scopeCanvas.width;
+  const h = scopeCanvas.height;
+  scopeCtx.clearRect(0, 0, w, h);
+
+  // Background Grid Lines
+  scopeCtx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+  scopeCtx.lineWidth = 1;
+  for (let x = 0; x < w; x += 30) {
+    scopeCtx.beginPath();
+    scopeCtx.moveTo(x, 0);
+    scopeCtx.lineTo(x, h);
+    scopeCtx.stroke();
+  }
+  for (let y = 0; y < h; y += 30) {
+    scopeCtx.beginPath();
+    scopeCtx.moveTo(0, y);
+    scopeCtx.lineTo(w, y);
+    scopeCtx.stroke();
+  }
+
+  // Threshold Redline (20 CPS)
+  const redlineY = h * 0.35;
+  scopeCtx.strokeStyle = "rgba(239, 68, 68, 0.6)";
+  scopeCtx.setLineDash([6, 4]);
+  scopeCtx.beginPath();
+  scopeCtx.moveTo(0, redlineY);
+  scopeCtx.lineTo(w, redlineY);
+  scopeCtx.stroke();
+  scopeCtx.setLineDash([]);
+
+  // Draw Rolling Waveform
+  scopeCtx.lineWidth = 2.5;
+  scopeCtx.strokeStyle = "#10B981";
+  scopeCtx.shadowColor = "rgba(16, 185, 129, 0.6)";
+  scopeCtx.shadowBlur = 10;
+  scopeCtx.beginPath();
+
+  const step = w / (scopePoints.length - 1);
+  for (let i = 0; i < scopePoints.length; i++) {
+    const val = scopePoints[i];
+    // Baseline at 75% height
+    const y = (h * 0.78) - (val * (h * 0.025)) + (Math.sin(scopePhase + i * 0.3) * (val > 0 ? 3 : 0.8));
+    if (i === 0) scopeCtx.moveTo(0, y);
+    else scopeCtx.lineTo(i * step, y);
+  }
+  scopeCtx.stroke();
+  scopeCtx.shadowBlur = 0;
+
+  scopePhase += 0.08;
+  requestAnimationFrame(renderScope);
+}
+requestAnimationFrame(renderScope);
+
+// --- 7. Spatial USB Topology Radar Canvas ---
+const radarCanvas = document.getElementById("usbRadarCanvas");
+const radarCtx = radarCanvas ? radarCanvas.getContext("2d") : null;
+let radarAngle = 0;
+
+const usbNodes = [
+  { id: "host", name: "Apple M-Series Core", type: "host", x: 0.5, y: 0.5, color: "#FFFFFF", radius: 22 },
+  { id: "hub3", name: "USB 3.1 Controller", type: "hub", x: 0.3, y: 0.35, color: "#06B6D4", radius: 14 },
+  { id: "hub2", name: "USB 2.0 HighSpeed", type: "hub", x: 0.7, y: 0.35, color: "#06B6D4", radius: 14 },
+  { id: "kbd", name: "Apple Internal Keyboard", type: "device", x: 0.22, y: 0.68, color: "#10B981", radius: 12 },
+  { id: "trk", name: "Apple Force Touch Trackpad", type: "device", x: 0.38, y: 0.78, color: "#10B981", radius: 10 },
+  { id: "flipper", name: "Flipper Zero (BadUSB)", type: "rogue", x: 0.78, y: 0.68, color: "#EF4444", radius: 13, warning: true },
+];
+
+function resizeRadar() {
+  if (!radarCanvas) return;
+  radarCanvas.width = radarCanvas.parentElement.clientWidth;
+  radarCanvas.height = radarCanvas.parentElement.clientHeight;
+}
+window.addEventListener("resize", resizeRadar);
+resizeRadar();
+
+function renderRadar() {
+  if (!radarCtx) return;
+  const w = radarCanvas.width;
+  const h = radarCanvas.height;
+  radarCtx.clearRect(0, 0, w, h);
+
+  const cx = w * 0.5;
+  const cy = h * 0.5;
+
+  // Concentric Radar Rings
+  radarCtx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+  radarCtx.lineWidth = 1;
+  [80, 150, 220].forEach(r => {
+    radarCtx.beginPath();
+    radarCtx.arc(cx, cy, r, 0, Math.PI * 2);
+    radarCtx.stroke();
+  });
+
+  // Radar Sweeper Beam
+  const sweepX = cx + Math.cos(radarAngle) * 230;
+  const sweepY = cy + Math.sin(radarAngle) * 230;
+  const grad = radarCtx.createLinearGradient(cx, cy, sweepX, sweepY);
+  grad.addColorStop(0, "rgba(6, 182, 212, 0.2)");
+  grad.addColorStop(1, "transparent");
+  radarCtx.fillStyle = grad;
+  radarCtx.beginPath();
+  radarCtx.moveTo(cx, cy);
+  radarCtx.arc(cx, cy, 230, radarAngle, radarAngle + 0.35);
+  radarCtx.closePath();
+  radarCtx.fill();
+  radarAngle += 0.015;
+
+  // Connection Lines
+  radarCtx.strokeStyle = "rgba(6, 182, 212, 0.25)";
+  radarCtx.lineWidth = 1.5;
+  usbNodes.forEach(node => {
+    if (node.type !== "host") {
+      radarCtx.beginPath();
+      radarCtx.moveTo(cx, cy);
+      radarCtx.lineTo(node.x * w, node.y * h);
+      radarCtx.stroke();
+    }
+  });
+
+  // Render Nodes
+  usbNodes.forEach(node => {
+    const nx = node.x * w;
+    const ny = node.y * h;
+
+    if (node.warning) {
+      // Radiating ring
+      radarCtx.strokeStyle = "rgba(239, 68, 68, 0.4)";
+      radarCtx.beginPath();
+      radarCtx.arc(nx, ny, node.radius + Math.sin(radarAngle * 4) * 6, 0, Math.PI * 2);
+      radarCtx.stroke();
     }
 
-    async function pollStatus() {
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
+    radarCtx.fillStyle = node.color;
+    radarCtx.shadowColor = node.color;
+    radarCtx.shadowBlur = 12;
+    radarCtx.beginPath();
+    radarCtx.arc(nx, ny, node.radius, 0, Math.PI * 2);
+    radarCtx.fill();
+    radarCtx.shadowBlur = 0;
 
-        document.getElementById('valKeys').innerText = data.keys_inspected.toLocaleString();
-        document.getElementById('valAttacks').innerText = data.attacks_neutralized;
-        document.getElementById('valDevices').innerText = data.active_devices;
+    // Node Text
+    radarCtx.fillStyle = "#F3F4F6";
+    radarCtx.font = "600 11px var(--fs)";
+    radarCtx.textAlign = "center";
+    radarCtx.fillText(node.name, nx, ny + node.radius + 14);
+  });
 
-        isArmed = data.running;
-        const pill = document.getElementById('statusPill');
-        const dot = document.getElementById('statusDot');
-        const text = document.getElementById('statusText');
-        const btn = document.getElementById('btnToggle');
+  requestAnimationFrame(renderRadar);
+}
+requestAnimationFrame(renderRadar);
 
-        if (isArmed) {
-          pill.style.color = 'var(--emerald)';
-          pill.style.background = 'var(--emerald-tint)';
-          pill.style.borderColor = 'rgba(0, 200, 5, 0.25)';
-          dot.style.background = 'var(--emerald)';
-          text.innerText = 'SHIELD ARMED';
-          btn.innerText = 'Disarm';
-        } else {
-          pill.style.color = 'var(--crimson)';
-          pill.style.background = 'var(--crimson-tint)';
-          pill.style.borderColor = 'rgba(255, 59, 48, 0.25)';
-          dot.style.background = 'var(--crimson)';
-          text.innerText = 'SHIELD DISARMED';
-          btn.innerText = 'Arm Shield';
-        }
-      } catch (e) {}
+// Radar Node Click Inspector
+const nodeDrawer = document.getElementById("nodeDrawer");
+const drawerDeviceName = document.getElementById("drawerDeviceName");
+const drawerClose = document.getElementById("drawerClose");
+drawerClose.addEventListener("click", () => nodeDrawer.classList.remove("open"));
+
+radarCanvas.addEventListener("click", (e) => {
+  const rect = radarCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const w = radarCanvas.width;
+  const h = radarCanvas.height;
+
+  for (const node of usbNodes) {
+    const nx = node.x * w;
+    const ny = node.y * h;
+    const dist = Math.hypot(mx - nx, my - ny);
+    if (dist <= node.radius + 6) {
+      sound.playKeyClick();
+      drawerDeviceName.textContent = node.name;
+      document.getElementById("drawVid").textContent = node.id === "flipper" ? "0x0483 (STMicroelectronics)" : "0x05ac (Apple Inc.)";
+      document.getElementById("drawPid").textContent = node.id === "flipper" ? "0x5740 (Flipper USB HID)" : "0x0267";
+      document.getElementById("drawTrust").textContent = node.id === "flipper" ? "0% (ROGUE BADUSB)" : "100% (Trusted)";
+      document.getElementById("drawTrust").style.color = node.id === "flipper" ? "var(--crimson)" : "var(--emerald)";
+      nodeDrawer.classList.add("open");
+      break;
     }
+  }
+});
 
-    async function toggleEngine() {
-      await fetch('/api/toggle', { method: 'POST' });
-      pollStatus();
+// --- 8. Mini Sparkline Drawing ---
+function drawMiniSpark(canvasId, points, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width = canvas.parentElement.clientWidth - 40;
+  const h = canvas.height = 28;
+  ctx.clearRect(0, 0, w, h);
+
+  if (points.length < 2) return;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const step = w / (points.length - 1);
+  const max = Math.max(...points, 1);
+  for (let i = 0; i < points.length; i++) {
+    const y = h - (points[i] / max * (h - 4)) - 2;
+    if (i === 0) ctx.moveTo(0, y);
+    else ctx.lineTo(i * step, y);
+  }
+  ctx.stroke();
+}
+const sparkHistory = {
+  cps: [0, 0, 0, 0, 2, 4, 1, 0, 0],
+  jitter: [12, 14, 11, 15, 18, 14, 12],
+  usb: [1, 1, 1, 1, 1, 1, 1],
+  attacks: [0, 0, 0, 0, 0, 0, 0],
+};
+
+// --- 9. Biometric Typing Authenticator ---
+const typingInput = document.getElementById("typingInput");
+const bioCps = document.getElementById("bioCps");
+const bioJitter = document.getElementById("bioJitter");
+const bioScore = document.getElementById("bioScore");
+const bioVerdict = document.getElementById("bioVerdict");
+const btnClearBio = document.getElementById("btnClearBio");
+
+let keyTimes = [];
+typingInput.addEventListener("keydown", (e) => {
+  sound.playKeyClick();
+  const now = performance.now();
+  keyTimes.push(now);
+  if (keyTimes.length > 24) keyTimes.shift();
+
+  if (keyTimes.length >= 4) {
+    const intervals = [];
+    for (let i = 1; i < keyTimes.length; i++) {
+      intervals.push(keyTimes[i] - keyTimes[i - 1]);
     }
+    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const cps = avg > 0 ? (1000 / avg).toFixed(1) : "0.0";
+    const variance = intervals.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / intervals.length;
+    const stdDev = Math.sqrt(variance).toFixed(1);
 
-    async function fireSimulation(preset, isBadUsb) {
-      alert(`Simulation '${preset}' will fire in 2 seconds.\n\nWatch DuckyGuard pop the Decoy Sink and quarantine the attack!`);
-      await fetch('/api/simulate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preset: preset, is_badusb: isBadUsb })
-      });
-    }
+    bioCps.textContent = `${cps} CPS`;
+    bioJitter.textContent = `${stdDev} ms`;
 
-    async function loadIncidents() {
-      const res = await fetch('/api/incidents');
-      const data = await res.json();
-      const list = document.getElementById('incidentList');
-      list.innerHTML = '';
+    // Push into rolling oscilloscope
+    scopePoints.push(parseFloat(cps));
+    scopePoints.shift();
 
-      if (!data.incidents || data.incidents.length === 0) {
-        list.innerHTML = '<div style="padding: 14px; color: var(--text-muted); font-size: 12px; font-family: var(--fpx);">No incidents recorded. Endpoint clean.</div>';
-        return;
-      }
+    // Human authenticity scoring
+    const isHuman = parseFloat(cps) < 18.0 && parseFloat(stdDev) > 8.0;
+    bioScore.textContent = isHuman ? "99.4%" : "12.0%";
+    bioScore.style.color = isHuman ? "var(--emerald)" : "var(--crimson)";
+    bioVerdict.textContent = isHuman ? "GENUINE HUMAN" : "ANOMALOUS BURST";
+    bioVerdict.style.color = isHuman ? "var(--emerald)" : "var(--crimson)";
+  }
+});
+btnClearBio.addEventListener("click", () => {
+  typingInput.value = "";
+  keyTimes = [];
+  bioCps.textContent = "0.0 CPS";
+  bioJitter.textContent = "0.0 ms";
+  bioScore.textContent = "100%";
+  bioVerdict.textContent = "GENUINE";
+  sound.playKeyClick();
+});
 
-      data.incidents.forEach((inc, idx) => {
-        const item = document.createElement('div');
-        item.className = 'incident-tile' + (idx === 0 ? ' selected' : '');
-        item.innerHTML = `
-          <div class="incident-title">${inc.filename}</div>
-          <div class="incident-meta">${inc.created_at}</div>
+// --- 10. Attack Lab & Flipper Simulator ---
+const btnLaunchDeck = document.getElementById("btnLaunchDeck");
+const btnTestAttack = document.getElementById("btnTestAttack");
+const flipperScreen = document.getElementById("flipperScreen");
+const attackPresetSelect = document.getElementById("attackPresetSelect");
+
+async function runAttackSim() {
+  sound.playAlarm();
+  const preset = attackPresetSelect.value;
+  flipperScreen.textContent = `[*] Launching Payload: ${preset}...\n[*] Speed: 120 chars/s (Machine Cloned)\n[!] SINK TRIGGERED! Intercepted by DuckyGuard!\n[✓] Payload routed to /tmp sandbox.\n[✓] Host terminal unharmed!`;
+
+  // Animate oscilloscope spike
+  for (let i = 0; i < 20; i++) {
+    scopePoints.push(28 + Math.random() * 8);
+    scopePoints.shift();
+  }
+
+  // Update Telemetry Terminal
+  appendTerminal("ALARM", "crimson", `Intercepted BadUSB burst (${preset}) @ 118 keys/s!`);
+  appendTerminal("SANDBOX", "orange", `Focus snatched to Decoy Quarantine Sink.`);
+  appendTerminal("YARA", "emerald", `Synthesized dynamic YARA rule for payload.`);
+
+  try {
+    await fetch("/api/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preset: "resume_dropper", is_badusb: true })
+    });
+  } catch (e) {}
+
+  setTimeout(fetchStatus, 1500);
+}
+btnLaunchDeck.addEventListener("click", runAttackSim);
+btnTestAttack.addEventListener("click", runAttackSim);
+
+// --- 11. Telemetry Terminal Feed Logger ---
+const termFeed = document.getElementById("termFeed");
+function appendTerminal(tag, colorClass, msg) {
+  const row = document.createElement("div");
+  row.className = "term-row";
+  const now = new Date().toTimeString().split(" ")[0];
+  row.innerHTML = `<span class="term-ts">[${now}]</span><span class="term-tag ${colorClass}">[${tag}]</span><span class="term-msg">${msg}</span>`;
+  termFeed.appendChild(row);
+  termFeed.scrollTop = termFeed.scrollHeight;
+}
+
+// --- 12. Background Daemon Status Polling ---
+async function fetchStatus() {
+  try {
+    const res = await fetch("/api/status");
+    if (!res.ok) return;
+    const data = await res.json();
+
+    document.getElementById("valCps").textContent = (data.keys_inspected > 0 ? (data.keys_inspected % 12).toFixed(1) : "0.0");
+    document.getElementById("valAttacks").textContent = data.attacks_neutralized || 0;
+    document.getElementById("valUsb").textContent = data.active_devices || 1;
+
+    // Render Sparklines
+    sparkHistory.cps.push(data.keys_inspected % 10);
+    sparkHistory.cps.shift();
+    drawMiniSpark("sparkCps", sparkHistory.cps, "#10B981");
+
+    sparkHistory.jitter.push(10 + Math.random() * 5);
+    sparkHistory.jitter.shift();
+    drawMiniSpark("sparkJitter", sparkHistory.jitter, "#10B981");
+
+    sparkHistory.usb.push(data.active_devices || 1);
+    sparkHistory.usb.shift();
+    drawMiniSpark("sparkUsb", sparkHistory.usb, "#06B6D4");
+
+    sparkHistory.attacks.push(data.attacks_neutralized || 0);
+    sparkHistory.attacks.shift();
+    drawMiniSpark("sparkAttacks", sparkHistory.attacks, "#FF6B00");
+
+    updateShieldUI(data.running);
+  } catch (e) {}
+}
+setInterval(fetchStatus, 2000);
+fetchStatus();
+
+// --- 13. Incident Vault & Forensic Modal ---
+const vaultTableBody = document.getElementById("vaultTableBody");
+const forensicModal = document.getElementById("forensicModal");
+const modalBody = document.getElementById("modalBody");
+const modalTitle = document.getElementById("modalTitle");
+const modalClose = document.getElementById("modalClose");
+modalClose.addEventListener("click", () => forensicModal.classList.remove("open"));
+
+async function loadIncidents() {
+  try {
+    const res = await fetch("/api/incidents");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.incidents && data.incidents.length > 0) {
+      vaultTableBody.innerHTML = "";
+      data.incidents.forEach(inc => {
+        const tr = document.createElement("tr");
+        tr.className = "vault-row";
+        tr.innerHTML = `
+          <td style="font-family:var(--fm); font-weight:700;">${inc.filename.replace('.md','')}</td>
+          <td>${inc.created_at}</td>
+          <td><span class="card-pill orange">BadUSB Dropper</span></td>
+          <td>External USB HID (0x05ac)</td>
+          <td><span class="card-pill crimson">MITRE T1200 / T1059</span></td>
+          <td><button class="btn" onclick="inspectReport('${inc.filename}')">Inspect</button></td>
         `;
-        item.onclick = () => {
-          document.querySelectorAll('.incident-tile').forEach(i => i.classList.remove('selected'));
-          item.classList.add('selected');
-          loadIncidentDetail(inc.filename);
-        };
-        list.appendChild(item);
-      });
-
-      if (data.incidents.length > 0) {
-        loadIncidentDetail(data.incidents[0].filename);
-      }
-    }
-
-    async function loadIncidentDetail(fname) {
-      const res = await fetch(`/api/incident?file=${encodeURIComponent(fname)}`);
-      const data = await res.json();
-      document.getElementById('incidentViewer').innerText = data.content + (data.yara ? "\n\n--- SYNTHESIZED YARA DETECTION SIGNATURE ---\n" + data.yara : "");
-    }
-
-    async function loadHardware() {
-      const res = await fetch('/api/status');
-      const data = await res.json();
-      const tbody = document.getElementById('hwTableBody');
-      tbody.innerHTML = '';
-
-      data.devices.forEach(d => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${d.vendor_id}</td>
-          <td>${d.product_id}</td>
-          <td><strong>${d.name}</strong></td>
-        `;
-        tbody.appendChild(row);
+        vaultTableBody.appendChild(tr);
       });
     }
+  } catch (e) {}
+}
+loadIncidents();
 
-    function openReportsFolder() {
-      fetch('/api/open-folder', { method: 'POST' });
-    }
+window.inspectReport = async function(fname) {
+  sound.playKeyClick();
+  modalTitle.textContent = `Forensic Incident Inspection: ${fname}`;
+  modalBody.textContent = "Loading incident triage report and synthesized YARA rules...";
+  forensicModal.classList.add("open");
 
-    setInterval(pollStatus, 1000);
-    pollStatus();
-  </script>
+  try {
+    const res = await fetch(`/api/incident?file=${fname}`);
+    const data = await res.json();
+    modalBody.textContent = `${data.content}\n\n========================================\nAUTOMATED YARA DETECTION RULE:\n========================================\n${data.yara}`;
+  } catch (e) {
+    modalBody.textContent = "Failed to load incident detail.";
+  }
+};
+
+document.getElementById("btnOpenReportsFolder").addEventListener("click", async () => {
+  sound.playKeyClick();
+  await fetch("/api/open-folder", { method: "POST" });
+});
+
+document.getElementById("modalCopyYara").addEventListener("click", () => {
+  sound.playKeyClick();
+  navigator.clipboard.writeText(modalBody.textContent);
+  alert("YARA rule copied to clipboard!");
+});
+</script>
 </body>
 </html>

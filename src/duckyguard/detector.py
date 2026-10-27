@@ -56,6 +56,7 @@ class KeystrokeAnomalyDetector:
         self.get_time_since_last_usb = usb_watcher_callback
 
         self._history: Deque[Tuple[float, str]] = collections.deque(maxlen=window_size)
+        self.recent_events: Deque[dict] = collections.deque(maxlen=80)
         self._lock = threading.Lock()
         self.total_keys_inspected = 0
         self.anomalies_detected = 0
@@ -152,6 +153,14 @@ class KeystrokeAnomalyDetector:
                 "matched_pattern": matched_pattern,
                 "confidence": round(confidence, 2),
             }
+
+            self.recent_events.append({
+                "t": round(now, 3),
+                "cps": metrics["cps"],
+                "jitter_ms": metrics["jitter_ms"],
+                "anomaly": is_anomaly,
+                "conf": metrics["confidence"],
+            })
 
             return is_anomaly, confidence, metrics
 

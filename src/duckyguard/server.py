@@ -86,6 +86,17 @@ class DuckyGuardServer:
                 elif path == "/api/open-folder":
                     subprocess.run(["open", server_ref.reports_dir])
                     self._send_json({"status": "ok"})
+                elif path == "/api/biometric-test":
+                    content_len = int(self.headers.get("Content-Length", 0))
+                    post_body = self.rfile.read(content_len).decode("utf-8") if content_len > 0 else "{}"
+                    try:
+                        data = json.loads(post_body)
+                        char = data.get("char", "a")
+                        ts = data.get("timestamp", time.time())
+                        is_ano, conf, met = server_ref.engine.detector.record_keystroke(char, timestamp=ts)
+                        self._send_json({"is_anomaly": is_ano, "confidence": conf, "metrics": met})
+                    except Exception as e:
+                        self._send_json({"error": str(e)})
                 else:
                     self.send_error(404, "Not Found")
 
@@ -111,6 +122,7 @@ class DuckyGuardServer:
                     "active_devices": len(devices),
                     "devices": devices,
                     "last_incident": server_ref.engine.last_incident_summary,
+                    "telemetry": list(server_ref.engine.detector.recent_events),
                 }
                 self._send_json(resp)
 
