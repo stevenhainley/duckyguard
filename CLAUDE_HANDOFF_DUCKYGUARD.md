@@ -1,5 +1,11 @@
 # Claude Handoff: DuckyGuard. Product Integration on shindustries.co
 
+> **Correction (2026-10-26, branch v2-polish):** this handoff was written before the claims audit.
+> Several statements below are not true of the code: there is no "Pro" tier, no $19 license, no PCAP/hex
+> viewer, no "enterprise exporter", no "sub-100 ms" measurement, and the app is Python + PyObjC (the Swift
+> host is retired under `legacy/`). The version is 2.0.0, not 2.4.0. Use `docs/FEATURES.md` as the only
+> source for product claims and `docs/EVALUATION.md` for numbers. The brand tokens in section 3 still apply.
+
 > **Directive for Claude**: Steven Hainley has engineered **DuckyGuard.** — an autonomous physical endpoint defense app for macOS that halts BadUSB / Flipper Zero HID injection attacks before a malicious shell opens. 
 > 
 > Your mission is to integrate DuckyGuard into Steven's main website portfolio (`shindustries.co` / `stevenhainley.net`) under the **Products** section alongside **Glim**, and configure its deployment to a dedicated subdomain (`duckyguard.shindustries.co`).

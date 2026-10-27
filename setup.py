@@ -2,14 +2,16 @@ from setuptools import setup, find_packages
 
 setup(
     name="duckyguard",
-    version="1.0.0",
+    version="2.0.0",
     author="Steven Hainley",
-    description="Autonomous Endpoint Defense Against HID Injection & BadUSB Attacks",
+    description="Blocks keystroke-injection devices (Rubber Ducky, Flipper Zero) on macOS by typing rhythm",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/stevenhainley/DuckyGuard",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
+    package_data={"duckyguard": ["ui/*", "ui/fonts/*", "ui/icons/*"]},
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -18,12 +20,11 @@ setup(
     ],
     python_requires=">=3.9",
     install_requires=[
-        "pynput>=1.7.6",
+        "pynput>=1.8.0",
         "rumps>=0.4.0",
+        "pyobjc-framework-Cocoa>=10",
+        "pyobjc-framework-WebKit>=10",
+        "pyobjc-framework-Quartz>=10",
     ],
-    entry_points={
-        "console_scripts": [
-            "duckyguard=duckyguard.cli:main",
-        ],
-    },
+    entry_points={"console_scripts": ["duckyguard=duckyguard.cli:main"]},
 )

@@ -1,185 +1,102 @@
 <p align="center">
-  <img src="assets/banner.png" alt="DuckyGuard Banner" width="100%" />
+  <img src="assets/duck_isolated_usb.png" alt="DuckyGuard" width="120" />
 </p>
 
-<p align="center">
-  <strong>Autonomous Endpoint Defense Against Physical HID Injection & BadUSB Attacks</strong>
-</p>
+<h1 align="center">DuckyGuard.</h1>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Security-Endpoint_Defense-red?style=for-the-badge" alt="Security" />
-  <img src="https://img.shields.io/badge/MITRE_ATT%26CK-T1200%20%7C%20T1059-blue?style=for-the-badge" alt="MITRE" />
-  <img src="https://img.shields.io/badge/Platform-macOS-black?style=for-the-badge&logo=apple" alt="macOS" />
-  <img src="https://img.shields.io/badge/Python-3.9%2B-brightgreen?style=for-the-badge&logo=python" alt="Python" />
-  <img src="https://img.shields.io/badge/License-MIT-purple?style=for-the-badge" alt="License" />
-</p>
+<p align="center"><strong>Keyboards that type too fast get stopped.</strong><br>
+A free macOS menu bar app that blocks keystroke-injection devices (Rubber Ducky, Flipper Zero BadUSB, pico-ducky, O.MG cable) by the rhythm of their typing.</p>
 
 ---
 
-## 🎯 Overview
+## What it does
 
-**DuckyGuard** is an open-source endpoint defense system engineered to detect, intercept, and neutralize physical **Human Interface Device (HID) injection attacks** (such as the **Hak5 Rubber Ducky**, **Flipper Zero BadUSB**, and **Raspberry Pi Pico** injectors).
+A USB device can claim to be a keyboard and type a command in under a second.
+macOS, like every OS, trusts keyboards. DuckyGuard watches the timing of every
+keystroke on the Mac. When a burst is faster and more even than any hand, it
+drops the rest of that burst inside the system event tap, before the keys
+reach an application, and tells you why in plain English:
 
-Traditional Antivirus and EDR (CrowdStrike, Defender, SentinelOne) suffer from a fundamental architectural blindspot: **the operating system kernel inherently trusts keyboards**. When a malicious USB microcontroller is plugged in, it emulates a keyboard and injects shell payloads at over 100 characters per second. By the time an EDR tool detects a child process spawn, the attacker's payload has already executed.
+> A keyboard typed 12 keys in 0.2 s (70 keys/s), about 9x faster than a fast typist. Keys held for 0 ms each; humans hold 60-150 ms. DuckyGuard blocked it.
 
-**DuckyGuard stops the attack before the first command executes.**
+- **Blocks, not just warns.** With the Accessibility permission, dropped keys never reach any app. With only Input Monitoring, it observes and warns.
+- **Explains every block.** Rate, gap regularity, key hold time, burst length, payload text and whether an unknown keyboard just appeared, each as a sentence and a number.
+- **Knows your keyboards.** Lists connected keyboards from IOKit; "Trust this keyboard" stops a known keyboard from raising suspicion when plugged in.
+- **Leaves software typing alone.** Password managers, text expanders and dictation type like machines on purpose; their events carry a process id and are labelled, not blocked.
+- **Test it safely.** One click types a harmless sentence into DuckyGuard's own window at 12 ms per key so you can watch the block happen. No hardware needed.
+- **Private.** Incidents, trusted keyboards and settings live in `~/Library/Application Support/DuckyGuard` with owner-only permissions. The only network request is an opt-in, once-a-day update check.
+- **Exportable.** One click writes a Markdown incident report; indicators, a MITRE ATT&CK mapping and a YARA rule are included only when the captured text actually contains something to base them on.
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      The DuckyGuard Defense Flow                        │
-│                                                                         │
-│   [Flipper Zero / Rubber Ducky]                                         │
-│                │                                                        │
-│                ▼                                                        │
-│   1. USB Watcher correlates new HID device attachment (IOKit)           │
-│                │                                                        │
-│                ▼                                                        │
-│   2. Keystroke Dynamics Engine calculates Velocity + Timing Jitter      │
-│                │                                                        │
-│                ▼ (Confidence ≥ 0.70 within ~100ms)                     │
-│   3. Decoy Sink preempts WindowServer focus into a secure sandbox       │
-│                │ (Keystrokes trapped in sandbox; Enter never hits shell)│
-│                ▼                                                        │
-│   4. Forensic Analyzer extracts IOCs & builds automated YARA rules     │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+## What it does not do
 
----
+Honesty is the product. Read this before relying on it.
 
-## ✨ Key Features
+- **The first keys get through.** DuckyGuard decides on the 8th to 12th key of a burst (simulation and the live test on one Mac; see `docs/EVALUATION.md`). A payload short enough to finish before that is not stopped.
+- **Slow, randomised payloads are not caught.** A device typing at 8-12 keys/s with random gaps looks human on every signal DuckyGuard measures. It also needs a minute at the keyboard.
+- **No hardware test has been run yet.** Every number in this repo is a simulation or a measurement of the code itself; see `docs/EVALUATION.md` for exactly what was measured and how to reproduce it.
+- **It cannot prove which device typed.** macOS does not tag key events with their source device. Incidents say "attributed by time" when an untrusted keyboard appeared shortly before.
+- **Not an antivirus, not a firewall.** It only looks at keystroke timing.
+- **Not signed or notarized yet.** See `docs/INSTALL.md` for the one-time Gatekeeper step.
 
-- **Multi-Factor Keystroke Dynamics**:
-  - **Velocity Analysis**: Differentiates human typing limits ($< 15\text{ cps}$) from microcontroller bursts ($40–120\text{ cps}$).
-  - **Inter-Keystroke Interval (IKI) Jitter**: Analyzes biometric entropy. Human typing has natural timing variance ($\sigma \ge 35\text{ms}$); synthetic firmware loops have near-zero jitter ($\sigma < 8\text{ms}$).
-- **Temporal USB Correlation**:
-  - Monitors the macOS IOKit USB bus for newly enumerated HID devices. If rapid typing begins within 5 seconds of a keyboard insertion, threat confidence surges.
-- **Active Decoy Quarantine Sink**:
-  - Hijacks macOS `keyWindow` focus immediately using a topmost containment window.
-  - Sinks the remaining attacker keystrokes safely into an isolated sandbox buffer, preventing commands from ever executing in Terminal or Spotlight.
-- **Automated Threat Intelligence & Triage**:
-  - Extracts Indicators of Compromise (IOCs): C2 IP addresses, dropper URLs, and file paths.
-  - Automatically de-obfuscates base64 / encoded strings.
-  - Maps attacks directly to the **MITRE ATT&CK® framework** (`T1200`, `T1059`, `T1105`, `T1071`).
-  - Automatically compiles an actionable **YARA detection signature** for endpoint fleet distribution.
-- **Native macOS Menu Bar App**:
-  - Lightweight menu bar interface (`rumps`) showing live telemetry, attack logs, and quick arm/disarm toggles.
-- **Built-in Attack Simulator**:
-  - Includes a synthetic BadUSB injector for safely testing and demonstrating endpoint defenses without physical hardware.
+## Install
 
----
+Download the DMG from a release (or build it: `./packaging/build.sh`), drag
+DuckyGuard to Applications, right-click, Open. Then grant **Input Monitoring**
+and **Accessibility** in System Settings, Privacy & Security; the first-run
+screen walks you through it. Full steps: [`docs/INSTALL.md`](docs/INSTALL.md).
 
-## 🚀 Quick Start
+Requirements: macOS 12 or newer. Python and all libraries are inside the app.
 
-### 1. Prerequisites
-- **macOS** 12.0+ (Apple Silicon or Intel)
-- **Python** 3.9+
-- **macOS Accessibility Permission**: Required to monitor global keyboard events. When prompted, allow Terminal / Python in:
-  `System Settings` → `Privacy & Security` → `Accessibility`
-
-### 2. Installation
+## Run from source
 
 ```bash
-# Clone the repository
-git clone https://github.com/stevenhainley/DuckyGuard.git
-cd DuckyGuard
-
-# Install dependencies
-pip3 install -e .
+git clone https://github.com/stevenhainley/DuckyGuard.git && cd DuckyGuard
+python3 -m venv .venv && .venv/bin/pip install -e . pytest hypothesis
+.venv/bin/python -m duckyguard app        # menu bar app
+.venv/bin/python -m duckyguard start      # protection in the terminal, JSON events
+.venv/bin/python -m duckyguard status     # permissions, keyboards, trusted devices
+.venv/bin/python -m pytest -q             # 44 tests
+.venv/bin/python bench/simulate.py        # simulation harness behind docs/EVALUATION.md
 ```
 
-### 3. Usage
+The terminal you run it from needs the two permissions instead of the app.
 
-#### Start Protection in Terminal
-```bash
-python3 -m duckyguard.cli start
-```
+## Numbers (simulation and code measurements, not hardware)
 
-#### Launch Native Menu Bar App
-```bash
-python3 -m duckyguard.cli tray
-```
+| what | result |
+|---|---|
+| False positives on 7 simulated human profiles, 7000 runs | 0 |
+| Injectors at 8-40 ms per key, even timing | 100% caught, median 8 keys before the block |
+| Even 100 ms per key (DEFAULT_DELAY 100) | 100% caught at 20 keys |
+| Randomised 80-120 ms per key | 0% caught, by design |
+| Tap callback: key event to verdict | median 14 us, p99 0.7 ms (live engine, one Mac) |
+| Idle cost of the built app | 0.8% CPU, 121 MB RSS (60 s, window hidden) |
 
-#### Test Defense (Built-in Attack Simulator)
-You can verify DuckyGuard immediately without plugging in a physical Flipper Zero:
+Details, method and the v1-to-v2 comparison: [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
-```bash
-# Fire a synthetic BadUSB payload (drops in 3 seconds)
-python3 -m duckyguard.cli simulate --preset resume_dropper
+## How it is built
 
-# Verify that benign human typing is NEVER flagged
-python3 -m duckyguard.cli simulate --human
-```
+Python 3 with PyObjC: a `rumps` status item, one AppKit window hosting a
+local HTML dashboard in a WKWebView (no web server, no open port), a pynput
+CGEvent tap for keystrokes, IOKit registry reads for keyboards. No kernel
+extension, no helper daemon, no root. Packaged with py2app into a
+self-contained unsigned `.app`. The v1 Swift window host and HTTP server are
+kept under `legacy/` for reference only.
 
-#### View Intercepted Incident Reports
-```bash
-python3 -m duckyguard.cli reports
-```
+Docs: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
+[`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md),
+[`docs/FEATURES.md`](docs/FEATURES.md) (the canonical feature list),
+[`docs/EVALUATION.md`](docs/EVALUATION.md),
+[`docs/INSTALL.md`](docs/INSTALL.md),
+[`docs/NOTARIZATION.md`](docs/NOTARIZATION.md),
+[`CHANGELOG.md`](CHANGELOG.md).
 
----
+## Support
 
-## 📊 Sample Incident Report & YARA Rule
+DuckyGuard is free and will stay free. If it earned a place in your menu
+bar, a pay-what-you-want contribution keeps it maintained (link coming with
+the first public release).
 
-When an attack is intercepted, DuckyGuard generates a full triage report in `reports/`:
+## Author and license
 
-```markdown
-# 🛡 DuckyGuard Incident Response Report
-
-**Incident ID**: `DG-INC-20261026-192500`  
-**Threat Status**: 🟢 NEUTRALIZED & CONTAINED (Zero Command Execution)  
-**Attacker Device**: `Flipper Zero (STMicroelectronics)`  
-**Injection Velocity**: `72.4 keystrokes/sec` (Confidence: 98%)  
-
-### MITRE ATT&CK® TTP Matrix
-| Technique ID | Technique Name | Observation Details |
-| :--- | :--- | :--- |
-| `T1200` | Hardware Additions | Physical HID emulation device inserted |
-| `T1059.004` | Command and Scripting Interpreter: Unix Shell | Attempted execution of bash/zsh commands |
-| `T1105` | Ingress Tool Transfer | Automated remote payload retrieval (curl) |
-
-### Indicators of Compromise (IOCs)
-- **Dropper URL**: `https://attacker-infrastructure.com/stage1.sh`
-- **C2 IP**: `198.51.100.42`
-```
-
-Along with an automated YARA detection signature:
-```yara
-rule DuckyGuard_BadUSB_Payload_20261026_192500
-{
-    meta:
-        description = "Automated rule generated by DuckyGuard for intercepted BadUSB payload"
-        threat_type = "BadUSB / HID Injection Dropper"
-        mitre_technique = "T1200, T1059"
-
-    strings:
-        $url1 = "https://attacker-infrastructure.com/stage1.sh" ascii wide
-        $ip1 = "198.51.100.42" ascii
-        $cmd1 = "curl" ascii nocase
-        $cmd2 = "chmod +x" ascii nocase
-
-    condition:
-        any of them
-}
-```
-
----
-
-## 📚 Technical Documentation
-
-For in-depth explanations of the OS focus model, timing algorithms, and threat scenarios:
-- **[Architecture & Engineering Deep Dive](docs/ARCHITECTURE.md)**
-- **[Threat Model & Attack Surface](docs/THREAT_MODEL.md)**
-
----
-
-## 👨‍💻 Author
-
-**Steven Hainley**  
-*Cybersecurity Student, Worcester Polytechnic Institute (WPI)*  
-*Minor in Law and Technology*  
-GitHub: [@stevenhainley](https://github.com/stevenhainley)  
-
----
-
-## ⚖️ License
-
-Distributed under the **MIT License**. See `LICENSE` for details.
+Steven Hainley, sh. industries. MIT License, see `LICENSE`.

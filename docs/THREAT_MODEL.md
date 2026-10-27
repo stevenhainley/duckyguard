@@ -1,40 +1,62 @@
-# DuckyGuard Threat Model & Attack Surface Analysis
+# DuckyGuard threat model (v2)
 
-This document details the threat landscape, attacker capabilities, and defensive boundaries of DuckyGuard.
+## What DuckyGuard defends against
 
----
+A device that enumerates as a USB or Bluetooth keyboard and types a scripted
+payload: Hak5 USB Rubber Ducky, Flipper Zero BadUSB, Raspberry Pi Pico with
+pico-ducky, Arduino/Teensy `Keyboard.h` sketches, O.MG cables, Bash Bunny in
+HID mode. These type at 8-40 ms per key with near-constant gaps and release
+each key almost instantly; a hand cannot.
 
-## 1. Threat Scenarios
+Scenarios it is built for:
 
-### Scenario A: The Physical Drop Attack (Lost USB Drive / BadUSB)
-- **Vector**: An attacker leaves a USB flash drive or Rubber Ducky in an office lobby, conference room, or campus library.
-- **Payload Goal**: An unsuspecting victim plugs it in; the device enumerates as a keyboard, launches Terminal/PowerShell, downloads a secondary backdoor (C2 implant), and unmounts in under 3 seconds.
-- **DuckyGuard Defense**: Intercepted at character 10. Decoy sink captures the URL and command; zero execution on host; incident report flags the C2 server immediately.
+- **Dropped USB stick / "free gift"**: the victim plugs it in; it opens
+  Spotlight or Terminal and types a one-line dropper.
+- **Walk-by / evil maid**: someone plugs a Flipper into an unlocked laptop
+  for a few seconds.
+- **Trojanized cable or dongle**: an O.MG-style cable injects remotely.
 
-### Scenario B: The Walk-by Attacker (Flipper Zero / Evil Maid)
-- **Vector**: A visitor, rogue contractor, or insider plugs a Flipper Zero or Raspberry Pi Pico into an unlocked laptop when the user steps away for coffee.
-- **Payload Goal**: Quick credential harvest or SSH key exfiltration via BadUSB script.
-- **DuckyGuard Defense**: The USB watcher catches the new HID enumeration; keystroke dynamics trigger the topmost quarantine alert with an audible bell; the decoy captures the exfiltration script and denies shell access.
+In every case DuckyGuard sees the first keys, decides on the 8th to 12th, and
+drops the rest. It tells the user what was typed before the decision and what
+was dropped, and which keyboard appeared shortly before (attributed by time).
 
-### Scenario C: Trojanized Hardware (O.MG Cable / USB Dongle)
-- **Vector**: A covert USB charging cable equipped with an embedded Wi-Fi microcontroller triggers keystroke injection remotely via an attacker's phone.
-- **DuckyGuard Defense**: Detected via keystroke velocity and zero-variance timing entropy, regardless of the physical form factor of the cable.
+## What it does not defend against
 
----
+| attack | why not | mitigation outside DuckyGuard |
+|---|---|---|
+| Payloads short enough to finish in 7 keys | the decision needs a burst to measure | none from DuckyGuard; keep Spotlight shortcuts and Terminal access in mind |
+| Slow payloads with randomised gaps (8-12 keys/s, jittered) | they look human on every timing signal; lowering thresholds would block fast typists | they take a minute at the keyboard and are visible on screen |
+| Mass-storage or network BadUSB (USB Ethernet gadgets, fake drives with autorun-style tricks) | DuckyGuard only looks at keystrokes | USB device policies, no auto-mount |
+| Mouse-only injection | mouse events are not scored | none |
+| Software keystroke injection by malware already on the Mac | events from local processes are labelled, not blocked, by default (password managers need this); the expert setting can score them | that malware already has your session; DuckyGuard is not an antivirus |
+| A device that first waits, then types one key per second | below every rule | the attacker needs minutes |
+| Attacks while DuckyGuard is paused or not granted Accessibility | obvious | the menu bar icon shows paused (grey) and the Overview says "Observing only" |
+| Disabling DuckyGuard by typing into it | the tap drops keys before any app, including DuckyGuard's own window, during quarantine; but a payload could Cmd+Q the app before the decision (that is a 2-key burst) | launch at login restarts it next session only; a future version could refuse Cmd+Q while a burst is in progress |
 
-## 2. Attacker Tactics vs. DuckyGuard Mitigations
+## Assumptions
 
-| Attacker Tactic | Attacker Mechanism | DuckyGuard Defense |
-| :--- | :--- | :--- |
-| **High-Speed Burst** | 50–100 chars/sec without delay | Blocked by Velocity Engine ($>20\text{ cps}$) |
-| **Uniform Timing Delays** | `delay(20)` to evade rate limiters | Blocked by Jitter Engine ($\sigma < 12\text{ms}$) |
-| **New Hardware Insertion** | Plugging in right before typing | Blocked by USB Temporal Correlation ($\le 5\text{s}$) |
-| **Encoded Base64 Strings** | Evading basic string pattern matchers | Caught by Base64 regex & automatic triage decoder |
-| **Focus Hijacking via Cmd+Tab** | Attacker tries to refocus Terminal | Decoy Sink enforces continuous focus lock on loss |
+- macOS 12+ with Input Monitoring (to see keystrokes) and Accessibility (to
+  drop them) granted to DuckyGuard. Without Accessibility it only warns.
+- Hardware key events carry source pid 0 and synthesized events carry the
+  poster's pid (documented by Apple; pynput depends on it; not verified here
+  against every macOS release).
+- The attacker does not have root or a kernel extension; at that level the
+  tap can be removed.
+- A CGEvent tap that takes too long is disabled by macOS; DuckyGuard keeps
+  the callback under a millisecond and re-enables the tap if it is turned off.
 
----
+## Data handling
 
-## 3. Assumptions & Limitations
+Captured text (both the part that reached an app and the dropped part) is
+stored locally in `~/Library/Application Support/DuckyGuard/incidents/`, mode
+0600. It can contain whatever the device typed, including secrets if the
+payload carried them. Nothing is uploaded. Exported reports go to
+`exports/` in the same folder and are revealed in Finder, not shared.
 
-- **Accessibility Permissions**: Under macOS, DuckyGuard requires Accessibility permissions in `System Settings -> Privacy & Security -> Accessibility` to observe global input events via `pynput` / CoreGraphics event taps.
-- **Slow Injection (< 8 chars/sec)**: If an attacker deliberately slows down their BadUSB payload to mimic human typing speed (e.g., 6 chars/sec), the attack takes 30–60 seconds to finish typing a payload. In an in-person attack, this vastly increases the attacker's physical exposure and gives the user time to notice and unplug the device.
+## Verification status
+
+No hardware test has been run. All detection figures are simulations of
+published human timing and injector timing (`docs/EVALUATION.md`). The first
+thing to do with a real Rubber Ducky or Flipper is to run its default
+payload against a text editor with DuckyGuard on, and record which characters
+arrived before the block.

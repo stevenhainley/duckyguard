@@ -270,7 +270,7 @@
     if (S.inTest) pad.classList.add("blocked");
   }
   function blockFinished(inc) {
-    if (S.inTest) {
+    if (S.inTest || (inc && inc.simulated)) {
       $("testSub").textContent = `Done. ${inc.keys_before_block} keys landed before the decision, ${inc.blocked_count} were dropped.`;
     }
   }
