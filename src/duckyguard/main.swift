@@ -35,7 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         window.minSize = NSSize(width: 860, height: 560)
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.backgroundColor = NSColor(red: 0.031, green: 0.035, blue: 0.051, alpha: 1.0) // Deep obsidian canvas (#08090D)
+        window.backgroundColor = NSColor(red: 0.055, green: 0.055, blue: 0.051, alpha: 1.0) // sh. industries dark background (#0E0E0D)
 
         webView = WKWebView(frame: window.contentView!.bounds, configuration: config)
         webView.autoresizingMask = [.width, .height]
