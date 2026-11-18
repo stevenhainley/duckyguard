@@ -1,0 +1,138 @@
+{
+ "_about": "Default USB and Bluetooth identities of keystroke-injection boards, curated by DuckyGuard from firmware sources and vendor documentation (each entry cites its source). An identity is whatever the device says it is: a match is a strong hint, a miss means nothing.",
+ "definite": [
+  {
+   "label": "P4wnP1 A.L.O.A. (default identity)",
+   "vid": "1d6b",
+   "pid": "1347",
+   "source": "https://raw.githubusercontent.com/RoganDawes/P4wnP1_aloa/master/service/defaults.go"
+  },
+  {
+   "label": "P4wnP1 A.L.O.A. (default identity)",
+   "product_contains": "p4wnp1",
+   "source": "https://raw.githubusercontent.com/RoganDawes/P4wnP1_aloa/master/service/defaults.go"
+  },
+  {
+   "label": "P4wnP1 A.L.O.A. (default serial)",
+   "serial": "deadbeef1337",
+   "source": "https://raw.githubusercontent.com/RoganDawes/P4wnP1_aloa/master/service/defaults.go"
+  },
+  {
+   "label": "Hak5 Bash Bunny (default HID identity)",
+   "vid": "f000",
+   "pid": "ff01",
+   "source": "https://documentation.hak5.org/bash-bunny/writing-payloads/attackmode.md"
+  },
+  {
+   "label": "Hak5 Bash Bunny (default HID + storage identity)",
+   "vid": "f000",
+   "pid": "ff02",
+   "source": "https://documentation.hak5.org/bash-bunny/writing-payloads/attackmode.md"
+  },
+  {
+   "label": "Digispark DigiKeyboard",
+   "vid": "16c0",
+   "pid": "27db",
+   "product_contains": "digikey",
+   "source": "https://raw.githubusercontent.com/digistump/DigistumpArduino/master/digistump-avr/libraries/DigisparkKeyboard/usbconfig.h"
+  },
+  {
+   "label": "Flipper Zero BadUSB over Bluetooth",
+   "transport": "bluetooth",
+   "product_prefix": "badusb ",
+   "source": "https://raw.githubusercontent.com/flipperdevices/flipperzero-firmware/dev/applications/main/bad_usb/helpers/bad_usb_hid.c"
+  },
+  {
+   "label": "Flipper Zero BadKB over Bluetooth (Momentum firmware)",
+   "transport": "bluetooth",
+   "product_prefix": "badkb ",
+   "source": "https://raw.githubusercontent.com/Next-Flip/Momentum-Firmware/dev/applications/main/bad_usb/helpers/bad_usb_hid.c"
+  },
+  {
+   "label": "Flipper Zero (names itself in its USB strings)",
+   "any_contains": "flipper",
+   "source": "https://developer.flipper.net/flipperzero/doxygen/badusb_file_format.html"
+  },
+  {
+   "label": "USB Rubber Ducky using Hak5's documented Apple spoof (default serial)",
+   "vid": "05ac",
+   "pid": "021e",
+   "serial": "111111111111",
+   "source": "https://documentation.hak5.org/hak5-usb-rubber-ducky/attack-modes-constants-and-variables/attack-modes"
+  },
+  {
+   "label": "USB Rubber Ducky using Hak5's documented Apple spoof (default name)",
+   "vid": "05ac",
+   "pid": "021e",
+   "product_contains": "usb input device",
+   "source": "https://documentation.hak5.org/hak5-usb-rubber-ducky/attack-modes-constants-and-variables/attack-modes"
+  }
+ ],
+ "likely": [
+  {
+   "label": "Flipper Zero BadUSB (factory identity: Logitech ids with no name strings)",
+   "vid": "046d",
+   "pid": "c529",
+   "no_strings": true,
+   "source": "https://raw.githubusercontent.com/flipperdevices/flipperzero-firmware/dev/targets/furi_hal_include/furi_hal_usb_hid.h"
+  }
+ ],
+ "hobby": [
+  {
+   "label": "Raspberry Pi Pico running CircuitPython (the base for pico-ducky; also used for custom keyboards)",
+   "vid": "239a",
+   "pid": "80f4",
+   "source": "https://raw.githubusercontent.com/adafruit/circuitpython/main/ports/raspberrypi/boards/raspberry_pi_pico/mpconfigboard.mk"
+  },
+  {
+   "label": "Adafruit / CircuitPython board (can be a custom keyboard or an injector)",
+   "vid": "239a",
+   "source": "https://raw.githubusercontent.com/adafruit/circuitpython/main/ports/raspberrypi/boards/raspberry_pi_pico/mpconfigboard.mk"
+  },
+  {
+   "label": "Raspberry Pi microcontroller board (can be a custom keyboard or an injector)",
+   "vid": "2e8a",
+   "source": "https://raw.githubusercontent.com/raspberrypi/usb-pid/main/Readme.md"
+  },
+  {
+   "label": "Arduino Leonardo (Keyboard.h sketches)",
+   "vid": "2341",
+   "pid": "8036",
+   "source": "https://raw.githubusercontent.com/arduino/ArduinoCore-avr/master/boards.txt"
+  },
+  {
+   "label": "Arduino Micro (Keyboard.h sketches)",
+   "vid": "2341",
+   "pid": "8037",
+   "source": "https://raw.githubusercontent.com/arduino/ArduinoCore-avr/master/boards.txt"
+  },
+  {
+   "label": "Arduino Leonardo or Micro (alternate vendor id)",
+   "vid": "2a03",
+   "source": "https://raw.githubusercontent.com/arduino/ArduinoCore-avr/master/boards.txt"
+  },
+  {
+   "label": "Teensy keyboard",
+   "vid": "16c0",
+   "pid": "04d0",
+   "source": "https://raw.githubusercontent.com/PaulStoffregen/cores/master/teensy4/usb_desc.h"
+  },
+  {
+   "label": "Teensy keyboard, mouse and joystick",
+   "vid": "16c0",
+   "pid": "0482",
+   "source": "https://raw.githubusercontent.com/PaulStoffregen/cores/master/teensy4/usb_desc.h"
+  },
+  {
+   "label": "Teensy serial, keyboard, mouse and joystick",
+   "vid": "16c0",
+   "pid": "0487",
+   "source": "https://raw.githubusercontent.com/PaulStoffregen/cores/master/teensy4/usb_desc.h"
+  },
+  {
+   "label": "Espressif ESP32 board (TinyUSB)",
+   "vid": "303a",
+   "source": "https://raw.githubusercontent.com/espressif/usb-pids/main/README.md"
+  }
+ ]
+}

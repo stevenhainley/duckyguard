@@ -1,9 +1,7 @@
-# DuckyGuard 2.0 evaluation
+# DuckyGuard evaluation (2.0 and 2.1)
 
-**Everything in this document is either a simulation or a measurement of the
-code on one Mac.** No keystroke-injection hardware was available while this
-was written. Nothing here is a hardware result, and the README does not claim
-one. Reproduce with:
+**Section 0 is a hardware test on one device. Everything after it is a simulation or a
+measurement of the code on one Mac**, and is labelled as such. Reproduce with:
 
 ```bash
 .venv/bin/python bench/simulate.py --n 1000 --seed 2026
@@ -12,6 +10,67 @@ one. Reproduce with:
 
 Machine: MacBook Pro, Apple silicon (arm64), macOS 26.6, Python 3.14.8,
 2026-10-26 (detector rules G/H/S and re-run 2026-10-27, same machine).
+
+## 0. Hardware results (Flipper Zero, 2026-11-10)
+
+Device: Flipper Zero, Momentum firmware `mntm-dev` (build 2026-08-18), typing through the firmware's
+JavaScript `badusb` module (same HID stack as the Bad KB app; the Bad KB app itself was not run),
+VID:PID 046d:c529, connected through a USB 2.0 hub. Host: Apple silicon MacBook, macOS 26, DuckyGuard
+CLI engine with Input Monitoring and Accessibility. Payload: a harmless 124-character sentence typed
+into a dedicated text window; "got through" means it arrived in that window. Harness and raw
+results: `bench/hardware/`. Recordings replayed by the test suite: `captures/hardware/`.
+
+What the device actually does (listen-only recording, DuckyGuard off):
+
+- Full speed: median 4.0 ms between key-downs, about 275 keys/s, and **irregular** (the detector
+  measured CV 0.6-1.25, because USB delivers reports in uneven clumps). The simulation assumed
+  CV < 0.1 at default speed, so rule G did not fire on hardware and v2.0 blocked on rule A1 at key 12.
+- With a per-key delay (10-100 ms): metronomic, CV 0.002-0.1, as the simulation assumed.
+- **Every key was released 1-2 ms after it was pressed, at every speed, including the jittered
+  payload.** Humans hold a key 60-150 ms.
+- The CGEvent tap does receive key events from this external USB keyboard on macOS 26.
+
+| payload (124 harmless characters) | characters that got through, v2.0 | with the key press rules (2.1) |
+|---|---|---|
+| full speed, about 4 ms per key | 11 | 4 |
+| 100 ms per key, typed right after plug-in | 7 | 1 (within 30 s of a previous block) |
+| 100 ms per key, typed 15 s after plug-in | 19 | 5 |
+| random 60-140 ms per key, right after plug-in | 124 (not blocked) | 3 |
+| random 60-140 ms per key, 15 s after plug-in | 124 (not blocked) | 5 |
+
+One run per row; this is a functional check, not a statistical sample. v2.0 also blocked 10, 25 and
+50 ms per key (5-10 characters got through; two of those runs include stray operator keystrokes).
+
+Rules added from these measurements (`src/duckyguard/detector.py`):
+
+| rule | fires when | notes |
+|---|---|---|
+| J | 5 keys less than 20 ms apart, each released in under 10 ms | full-speed injectors, on the 5th key |
+| K | 6 keys in a row each released in under 10 ms, at any speed, across pauses | catches jittered and slow payloads; decided on the 7th key |
+| L | 4 such keys within 10 s of an untrusted keyboard appearing | decided on the 5th key |
+| M | 2 such keys within 30 s of a key press block | a blocked device that keeps typing after the block ends |
+
+A key pressed while the previous key is still down (rollover, which hands do constantly) ends the
+run, and so does one normally held key. Known false-positive risk: firmware that emits a tap as an
+instant press-release (QMK mod-tap or tap-dance keys, some macro pads) can produce runs of short
+holds; six in a row at typing speed is needed before rule K fires. Not tested on such keyboards.
+An attacker can defeat these rules by scripting a 60 ms+ hold per key, which also slows the payload.
+
+New-keyboard hold (2026-11-11, same device and Mac): the Flipper presented an identity that was not on the
+trust list, typed at full speed 3.5 s after connecting (one run) and 1.2 s after connecting (two runs), and
+0 of 124 characters got through each time; DuckyGuard blocked all 124 keys. The hold blocks every
+hardware key, including the built-in keyboard, because key events carry no device identity. A payload typing
+0.3 s after connecting produced no key events at all on this Mac, with or without DuckyGuard, so the
+"types the instant it enumerates" case could not be exercised; the rescan-on-first-key path is covered by
+unit tests only.
+
+Human false positives in simulation are unchanged by rules J-M: 0/7000 on seeds 2026 and 7, 2/7000
+on seed 99, the same as before the change.
+
+The tables in sections 2 to 4 were produced before rules J-M existed. Re-running
+`bench/simulate.py` with them gives 5-7 keys before the block for every simulated injector that
+releases keys instantly, including the "slow + randomised 80-120 ms" row (previously 0% caught);
+the "no key press information" rows are unchanged.
 
 ## 1. What the detector decides on
 
@@ -105,7 +164,7 @@ matching DuckyScript defaults and the 12 ms timing of `captures/sample-flipper-a
 | Spotlight then Terminal, 15 ms | 100% | 6 | 75 |
 
 Without key-up information (hold times unknown) the results are identical (re-measured after G/H/S),
-so detection does not depend on hold-time data.
+so detection does not depend on key press data.
 
 **The miss is deliberate.** A payload typed at 8-12 keys/s with randomised
 gaps is inside the human range on every signal DuckyGuard measures. Such a
@@ -131,15 +190,15 @@ timestamp", and the 12-key text window could never match the 13-character
 
 ## 4. How many keys get through
 
-DuckyGuard decides on the Nth key of a burst, so N-1 keys reach the front
-application before the block (the Nth is dropped). In simulation N is 6 at
+DuckyGuard decides on the Nth key of a burst, so N-1 keys get through to the front
+application before the block (the Nth is blocked). In simulation N is 6 at
 injector speed up to 25 ms/key (8 for even 30-40 ms payloads with no other signal); in the live safe test on this Mac N was 8 to 12 (the first
 keys land while the window is still activating, which adds jitter). A payload
 that opens Spotlight and types `terminal` + Return has sent 9 key events;
 with N = 6 or 8 the Return is blocked, with N = 12 it is not. The earlier live safe test (N = 8 to 12) predates rules G/H/S and has not been repeated. **DuckyGuard does not
 guarantee that the first command never runs.** The v1 report text
 "NEUTRALIZED & CONTAINED (Zero Command Execution)" was removed for that
-reason; v2 reports list exactly which characters reached the app.
+reason; v2 reports list exactly which characters got through.
 
 ## 5. Latency (measured)
 
@@ -163,6 +222,11 @@ measured. The v1 `ioreg` subprocess took 200-400 ms per poll.
 
 ## 6. Resource use (measured)
 
+Measured on the 2.0 build, before the 3D duck and the 2.1 dashboard, and not
+repeated since. The duck draws only while the window is visible, so the
+hidden-window figure is the one least likely to have moved, but that is an
+expectation, not a measurement.
+
 `dist/DuckyGuard.app` built by `packaging/build.sh`, window hidden, idle for
 60 s, `ps` cputime delta: **0.80% CPU, RSS 121 MB**. Running from source in
 the venv with the window hidden: 1.9% CPU, 84 MB. The RSS is mostly the
@@ -172,15 +236,21 @@ Targets for a later release: under 0.3% idle, under 60 MB.
 
 ## 7. Tests
 
-`.venv/bin/python -m pytest -q`: 49 tests pass (unit tests for the detector,
-store, devices, incidents; replay of `captures/sample-flipper-attack.txt` at 12
-and 30 ms per key; hypothesis property tests for timing edge cases such as
-zero and negative gaps, clock going backwards, infinite rates, short fast
-bursts separated by pauses, and "every block has reasons").
+`.venv/bin/python -m pytest -q`: 123 tests pass as of 2.1 (49 at 2.0). Unit
+tests for the detector, store, devices and incidents; the key press rules;
+holds, the lookalike check, Record only and lock on block; injector
+identities, exports and the test payloads; the safe test's sentence and its
+refusal to press Return; timed pause; noticing a permission granted after
+launch; replay of `captures/sample-flipper-attack.txt` and of the Flipper
+recordings in `captures/hardware/`; hypothesis property tests for timing edge
+cases such as zero and negative gaps, clock going backwards, infinite rates,
+short fast bursts separated by pauses, and "every block has reasons". The
+window, the menus and the tap itself are not covered by automated tests.
 
 ## 8. Not verified
 
-- Any real Rubber Ducky, Flipper Zero, Pico, O.MG cable or Bash Bunny.
+- Any real Rubber Ducky, Pico, O.MG cable or Bash Bunny, and the Flipper Zero's own Bad KB app (section 0 covers one Flipper Zero through its JavaScript `badusb` module).
+- Security keys that type a code, barcode scanners, macro pads and QMK tap keys (expected to be held or blocked; none tested).
 - That hardware key events on every macOS version carry source pid 0 (Apple
   documents it; pynput relies on it; checked here only with synthetic events).
 - Intel Macs and macOS before 26 (the released app is built for and run on macOS 26 / arm64 only; the bundled Python has minos 26.0).

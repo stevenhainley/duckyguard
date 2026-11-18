@@ -19,22 +19,63 @@ What this can and cannot do (honest version):
 
 from __future__ import annotations
 
+import functools
+import json
+import os
 import plistlib
 import subprocess
 import threading
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, replace
 from typing import Callable, Dict, List, Optional, Set
 
-KNOWN_INJECTOR_VIDS: Dict[int, str] = {
-    0x0483: "STMicroelectronics (Flipper Zero uses this vendor id)",
-    0x04D8: "Microchip (Hak5 USB Rubber Ducky uses this vendor id)",
-    0x2E8A: "Raspberry Pi (Pico, pico-ducky)",
-    0x16C0: "Van Ooijen / Teensy (common BadUSB boards)",
-    0x1B4F: "SparkFun Pro Micro",
-    0x2341: "Arduino (Leonardo / Micro, Keyboard.h sketches)",
-    0x1209: "pid.codes open-source hardware",
-}
+_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+_MAJOR_BRANDS = {0x05AC: "apple", 0x046D: "logitech", 0x045E: "microsoft"}   # vendors that always name themselves
+
+
+@functools.lru_cache(maxsize=None)
+def _data(name: str) -> dict:
+    try:
+        with open(os.path.join(_DATA_DIR, name), "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def vendor_name(vendor_id: int) -> str:
+    """Registered owner of a USB vendor id, from the USB ID database shipped with the app ("" if unknown)."""
+    return _data("usb_vendors.json").get("vendors", {}).get(f"{int(vendor_id):04x}", "")
+
+
+def _matches(rule: dict, kb: "Keyboard") -> bool:
+    product, maker = (kb.product or "").lower(), (kb.manufacturer or "").lower()
+    if product == "unnamed keyboard":
+        product = ""
+    checks = {
+        "vid": lambda v: f"{kb.vendor_id:04x}" == v,
+        "pid": lambda v: f"{kb.product_id:04x}" == v,
+        "serial": lambda v: (kb.serial or "").lower() == v,
+        "transport": lambda v: v in (kb.transport or "").lower(),
+        "product_contains": lambda v: v in product,
+        "product_prefix": lambda v: product.startswith(v),
+        "any_contains": lambda v: v in product or v in maker,
+        "no_strings": lambda v: not product and not maker,
+    }
+    return all(checks[k](v) for k, v in rule.items() if k in checks)
+
+
+def identify_injector(kb: "Keyboard") -> Optional[dict]:
+    """Matches a keyboard against the default identities of known injection boards.
+    Returns {"label", "confidence": definite | likely | hobby board, "source"} or None."""
+    if kb.built_in:
+        return None
+    table = _data("injector_identities.json")
+    for tier, confidence in (("definite", "definite"), ("likely", "likely"), ("hobby", "hobby board")):
+        for rule in table.get(tier, []):
+            if _matches(rule, kb):
+                return {"label": rule["label"], "confidence": confidence, "source": rule.get("source", "")}
+    return None
+
 
 BUILTIN_TRANSPORTS = {"FIFO", "SPU", "SPMI", "Audio"}
 
@@ -52,11 +93,13 @@ class Keyboard:
     location_id: int
     first_seen: float
     vendor_note: str = ""
+    duplicate: bool = False        # a second device with the same identity as one already connected
 
     def as_dict(self) -> dict:
         d = asdict(self)
         d["vendor_hex"] = f"{self.vendor_id:04x}"
         d["product_hex"] = f"{self.product_id:04x}"
+        d["vendor_name"] = vendor_name(self.vendor_id)
         return d
 
 
@@ -99,8 +142,12 @@ def _nodes_to_keyboards(nodes: List[dict], now: Optional[float] = None) -> List[
             key=key, product=product, manufacturer=str(node.get("Manufacturer") or ""),
             vendor_id=vid, product_id=pid, serial=serial, transport=transport, built_in=built_in,
             location_id=int(node.get("LocationID") or 0), first_seen=now,
-            vendor_note=KNOWN_INJECTOR_VIDS.get(vid, ""),
+            vendor_note="",
         ))
+    for k in out:
+        hit = identify_injector(k)
+        if hit:
+            k.vendor_note = f"{hit['label']} ({hit['confidence']})"
     return out
 
 
@@ -208,6 +255,30 @@ def enumerate_keyboards() -> List[Keyboard]:
     return enumerate_keyboards_ioreg()
 
 
+def identity_flags(kb: Keyboard, present: List[Keyboard], trusted: Dict[str, dict]) -> List[str]:
+    """Reasons to distrust a keyboard's claimed identity. USB identity strings are whatever the device says they are."""
+    flags: List[str] = []
+    if kb.duplicate:
+        flags.append("duplicate")                      # same identity as a keyboard that is already plugged in
+    known = trusted.get(kb.key)
+    if known and known.get("serial") and kb.serial and known["serial"] != kb.serial:
+        flags.append("serial changed")                 # trusted name, different serial number
+    if kb.vendor_id and not kb.built_in:
+        models = [(o.vendor_id, o.product_id) for o in present if o.key != kb.key and (o.built_in or o.key in trusted)]
+        models += [(int(t.get("vendor_id", 0) or 0), int(t.get("product_id", 0) or 0)) for k, t in trusted.items() if k != kb.key]
+        if (kb.vendor_id, kb.product_id) in models:
+            flags.append("lookalike")                  # same model numbers as a keyboard you trust, different details
+    brand = _MAJOR_BRANDS.get(kb.vendor_id)
+    if brand and kb.manufacturer and brand not in kb.manufacturer.lower() and not kb.built_in:
+        flags.append("vendor mismatch")                # a big-brand vendor id with someone else's name on it
+    hit = identify_injector(kb)
+    if hit and hit["confidence"] in ("definite", "likely"):
+        flags.append("known injector identity")
+    elif hit:
+        flags.append("hobby board")
+    return flags
+
+
 class KeyboardWatcher:
     """
     Background poller. ``is_trusted(key)`` decides whether a keyboard counts as
@@ -217,10 +288,13 @@ class KeyboardWatcher:
 
     def __init__(self, is_trusted: Callable[[str], bool], poll_interval: float = 1.0,
                  on_new_keyboard: Optional[Callable[[Keyboard], None]] = None,
-                 enumerate=enumerate_keyboards):
+                 enumerate=enumerate_keyboards, on_removed: Optional[Callable[[str], None]] = None):
         self.is_trusted = is_trusted
         self.poll_interval = poll_interval
         self.on_new_keyboard = on_new_keyboard
+        self.on_removed = on_removed
+        self._counts: Dict[str, int] = {}
+        self._forced_untrusted = False
         self._enumerate = enumerate
         self._lock = threading.Lock()
         self._present: Dict[str, Keyboard] = {}
@@ -257,31 +331,56 @@ class KeyboardWatcher:
 
     def refresh(self, initial: bool = False) -> List[Keyboard]:
         t0 = time.perf_counter()
-        current = {k.key: k for k in self._enumerate()}
+        listing = list(self._enumerate())
         self.poll_ms = (time.perf_counter() - t0) * 1000.0
+        counts: Dict[str, int] = {}
+        current: Dict[str, Keyboard] = {}
+        for k in listing:
+            counts[k.key] = counts.get(k.key, 0) + 1
+            current[k.key] = k                           # the most recently listed instance of each identity
         new: List[Keyboard] = []
+        removed: List[str] = []
         with self._lock:
             for key, kb in current.items():
+                had = self._counts.get(key, 0)
+                if counts[key] > had and not initial:
+                    new.append(replace(kb, duplicate=had > 0))
                 if key not in self._present:
-                    if not initial:
-                        new.append(kb)
                     self._present[key] = kb
                 else:
                     current[key] = self._present[key]  # keep first_seen
+            for key, had in self._counts.items():
+                if counts.get(key, 0) < had:
+                    removed.append(key)
             for key in list(self._present):
                 if key not in current:
                     del self._present[key]
+            self._counts = counts
             for kb in new:
-                if not self.is_trusted(kb.key) and not kb.built_in:
+                if (not self.is_trusted(kb.key) or kb.duplicate) and not kb.built_in:
                     self._last_untrusted = kb
                     self._last_untrusted_at = kb.first_seen
+                    self._forced_untrusted = kb.duplicate
         for kb in new:
             if self.on_new_keyboard:
                 try:
                     self.on_new_keyboard(kb)
                 except Exception:
                     pass
+        for key in removed:
+            if self.on_removed:
+                try:
+                    self.on_removed(key)
+                except Exception:
+                    pass
         return list(current.values())
+
+    def mark_untrusted(self, kb: Keyboard) -> None:
+        """Treat this keyboard as untrusted even though its identity is on the trust list."""
+        with self._lock:
+            self._last_untrusted = kb
+            self._last_untrusted_at = time.time()
+            self._forced_untrusted = True
 
     def keyboards(self) -> List[Keyboard]:
         with self._lock:
@@ -291,7 +390,7 @@ class KeyboardWatcher:
         with self._lock:
             if self._last_untrusted_at is None:
                 return None
-            if self._last_untrusted and self.is_trusted(self._last_untrusted.key):
+            if self._last_untrusted and self.is_trusted(self._last_untrusted.key) and not self._forced_untrusted:
                 return None
             return time.time() - self._last_untrusted_at
 
@@ -303,3 +402,4 @@ class KeyboardWatcher:
         with self._lock:
             self._last_untrusted = None
             self._last_untrusted_at = None
+            self._forced_untrusted = False

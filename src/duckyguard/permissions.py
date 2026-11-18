@@ -67,6 +67,39 @@ def request_input_monitoring() -> None:
         pass
 
 
+def request_accessibility() -> None:
+    """Asks macOS to show its Accessibility prompt, which also adds this app to the list in System Settings
+    so the user only has to flip the switch."""
+    try:
+        from ApplicationServices import AXIsProcessTrustedWithOptions, kAXTrustedCheckOptionPrompt
+        AXIsProcessTrustedWithOptions({kAXTrustedCheckOptionPrompt: True})
+    except Exception:
+        pass
+
+
+def secure_input_active() -> bool:
+    """True while macOS Secure Input is on (a password field has focus). Event taps receive no keys then,
+    so DuckyGuard cannot see or drop typing until it ends. IsSecureEventInputEnabled() is public Carbon API."""
+    try:
+        carbon = _lib("/System/Library/Frameworks/Carbon.framework/Carbon")
+        fn = carbon.IsSecureEventInputEnabled
+        fn.restype = ctypes.c_bool
+        return bool(fn())
+    except Exception:
+        return False
+
+
+def lock_screen() -> bool:
+    """Locks the screen now. Uses SACLockScreenImmediate from the private login framework: there is no
+    public call for this, so it may stop working in a future macOS. Returns False if it could not be called."""
+    try:
+        login = _lib("/System/Library/PrivateFrameworks/login.framework/Versions/Current/login")
+        login.SACLockScreenImmediate()
+        return True
+    except Exception:
+        return False
+
+
 def open_settings(url: str) -> None:
     try:
         subprocess.Popen(["open", url])

@@ -21,12 +21,21 @@ def feed(det, intervals, text="echo hello world this is text", hold=None, start=
     return None, v
 
 
-def test_rubber_ducky_12ms_blocked_within_8_keys():
+def test_rubber_ducky_12ms_blocked_within_8_keys_on_timing_alone():
+    # No key-up information (hold unknown): the rate and regularity rules still decide.
     det = KeystrokeAnomalyDetector()
-    n, v = feed(det, [0.012] * 40, hold=0.003)
+    n, v = feed(det, [0.012] * 40, hold=None)
     assert n is not None and n <= 8
     assert v.kind == "machine"
     assert v.reasons and "keys/s" in v.reasons[0]
+    assert "blocked" in v.explanation
+
+
+def test_rubber_ducky_12ms_with_instant_releases_blocked_at_5th_key():
+    det = KeystrokeAnomalyDetector()
+    n, v = feed(det, [0.012] * 40, hold=0.003)
+    assert n == 5 and v.features["rule"].startswith("J")
+    assert v.kind == "machine"
     assert "blocked" in v.explanation
 
 
@@ -165,10 +174,16 @@ def test_record_keystroke_compat_shim():
     assert "reasons" in metrics
 
 
-def test_rubber_ducky_default_blocked_at_6th_key():
+def test_rubber_ducky_default_blocked_at_6th_key_on_timing_alone():
+    det = KeystrokeAnomalyDetector()
+    n, v = feed(det, [0.008] * 40, hold=None)
+    assert n == 6 and v.features["rule"].startswith("G")
+
+
+def test_rubber_ducky_default_with_instant_releases_blocked_at_5th_key():
     det = KeystrokeAnomalyDetector()
     n, v = feed(det, [0.008] * 40, hold=0.002)
-    assert n == 6 and v.features["rule"].startswith("G")
+    assert n == 5 and v.features["rule"].startswith("J")
 
 
 def test_new_keyboard_plus_fast_even_burst_blocks_at_6_keys():

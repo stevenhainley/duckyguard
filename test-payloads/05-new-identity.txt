@@ -1,0 +1,5 @@
+REM DuckyGuard test payload 5: announces an identity you have not trusted, to exercise the new-keyboard hold.
+REM With the hold on, none of this sentence should get through.
+ID 1234:abcd DuckyGuard:Test Keyboard
+DELAY 2000
+STRING DGTEST the quick brown fox jumps over the lazy dog 0123456789

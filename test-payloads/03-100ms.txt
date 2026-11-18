@@ -1,0 +1,4 @@
+REM DuckyGuard test payload 3: 100 ms per key, the slow-and-even case. Types one harmless sentence.
+DELAY 3000
+STRING_DELAY 100
+STRING DGTEST the quick brown fox jumps over the lazy dog 0123456789

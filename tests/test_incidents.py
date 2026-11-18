@@ -36,7 +36,7 @@ def test_incident_markdown_has_everything(tmp_path):
 def test_no_yara_without_indicators():
     an = analyze_text("hello world this is a plain sentence")
     assert an["yara"] is None
-    assert [m["id"] for m in an["mitre"]] == ["T1200"]
+    assert [m["id"] for m in an["mitre"]] == ["T1674", "T1200"]
     v = blocked_verdict()
     inc = finalize_incident(build_incident(v.as_dict(), None, "hello"), " world", 6)
     md = render_markdown(inc, "2.0.0")

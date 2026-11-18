@@ -35,3 +35,9 @@ env/
 # Ignore live captures except samples
 captures/capture-*.txt
 !captures/sample-*.txt
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Plate build tooling
+ui-src/node_modules/

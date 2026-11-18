@@ -89,9 +89,10 @@ def analyze_text(text: str) -> dict:
         techniques.append(a.MITRE_MAP["c2"])
     if "launchagents" in clean.lower() or "crontab" in clean.lower():
         techniques.append(a.MITRE_MAP["persistence"])
-    # T1200 (Hardware Additions) is the technique class DuckyGuard watches for; it
-    # is listed for every incident because the detection itself is the evidence.
+    # T1674 (Input Injection) and T1200 (Hardware Additions) describe what DuckyGuard watches for; they
+    # are listed for every incident because the detection itself is the evidence.
     techniques.insert(0, a.MITRE_MAP["hardware"])
+    techniques.insert(0, a.MITRE_MAP["input_injection"])
 
     yara = generate_yara(urls, ips, clean) if (urls or ips) else None
     return {
@@ -101,6 +102,74 @@ def analyze_text(text: str) -> dict:
         "mitre": [{"id": t[0], "name": t[1], "note": t[2]} for t in techniques],
         "yara": yara,
         "text_length": len(clean),
+    }
+
+
+_TOKEN_NAMES = {"BKSP": "BACKSPACE", "esc": "ESC", "delete": "DELETE", "up": "UPARROW", "down": "DOWNARROW",
+                "left": "LEFTARROW", "right": "RIGHTARROW", "cmd": "GUI", "cmd_r": "GUI", "ctrl": "CTRL", "alt": "ALT"}
+
+
+def reconstruct_script(text: str) -> List[str]:
+    """Rewrites captured keystrokes as a payload script in the common Ducky/Flipper syntax, so a reader can see
+    what the device was trying to do. An approximation from what was typed, not a copy of the device's file."""
+    lines: List[str] = []
+    buf = ""
+
+    def flush():
+        nonlocal buf
+        if buf:
+            lines.append("STRING " + buf)
+            buf = ""
+
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        m = re.match(r"\[([A-Za-z_0-9]+)\]", text[i:]) if ch == "[" else None
+        if m:
+            flush()
+            lines.append(_TOKEN_NAMES.get(m.group(1), m.group(1).upper()))
+            i += len(m.group(0))
+            continue
+        if ch in "\n\r":
+            flush()
+            lines.append("ENTER")
+        elif ch == "\t":
+            flush()
+            lines.append("TAB")
+        else:
+            buf += ch
+        i += 1
+    flush()
+    return lines
+
+
+def to_ocsf(inc: dict, app_version: str) -> dict:
+    """One incident as an OCSF Detection Finding (class 2004), for sending to a SIEM. Built by hand: no schema
+    library is used and the output has not been validated against a live OCSF server."""
+    v = inc.get("verdict") or {}
+    an = inc.get("analysis") or analyze_text(inc.get("prefix_text", "") + inc.get("blocked_text", ""))
+    kb = inc.get("keyboard") or {}
+    started = float(inc.get("started_at") or time.time())
+    reached = int(inc.get("keys_before_block") or 0)
+    return {
+        "class_uid": 2004, "class_name": "Detection Finding", "category_uid": 2, "category_name": "Findings",
+        "activity_id": 1, "activity_name": "Create", "type_uid": 200401,
+        "time": int(started * 1000),
+        "severity_id": 4 if reached else 3, "severity": "High" if reached else "Medium",
+        "status_id": 1, "status": "New",
+        "action_id": 2 if inc.get("can_drop", True) else 1, "action": "Denied" if inc.get("can_drop", True) else "Allowed",
+        "message": inc.get("summary") or inc.get("explanation") or "",
+        "metadata": {"version": "1.3.0", "product": {"name": "DuckyGuard", "vendor_name": "sh. industries", "version": app_version}},
+        "finding_info": {
+            "uid": inc.get("id", ""), "title": "Keystroke injection " + ("blocked" if inc.get("can_drop", True) else "detected"),
+            "desc": inc.get("explanation", ""), "created_time": int(started * 1000),
+            "types": [str((v.get("features") or {}).get("rule") or "")],
+            "attacks": [{"version": "17", "technique": {"uid": t["id"], "name": t["name"]}} for t in an.get("mitre", [])],
+        },
+        "device": {"type_id": 99, "type": "Other", "name": kb.get("product", ""), "vendor_name": kb.get("vendor_name") or kb.get("manufacturer", ""),
+                   "uid": kb.get("key", "")} if kb else None,
+        "unmapped": {"keys_reached_app": reached, "keys_dropped": int(inc.get("blocked_count") or 0),
+                     "simulated": bool(inc.get("simulated")), "features": v.get("features", {}), "reasons": v.get("reasons", [])},
     }
 
 
@@ -152,7 +221,7 @@ def render_markdown(inc: dict, app_version: str) -> str:
     v = inc.get("verdict", {})
     f = v.get("features", {})
     kb = inc.get("keyboard") or {}
-    an = inc.get("analysis") or {}
+    an = inc.get("analysis") or analyze_text(inc.get("prefix_text", "") + inc.get("blocked_text", ""))
     lines: List[str] = []
     lines.append(f"# DuckyGuard incident {inc['id']}")
     lines.append("")
@@ -161,8 +230,8 @@ def render_markdown(inc: dict, app_version: str) -> str:
         lines.append("")
     lines.append(f"- Time: {human_time(inc.get('started_at'))} to {human_time(inc.get('ended_at'))}")
     lines.append(f"- DuckyGuard version: {app_version}")
-    lines.append(f"- Keys that reached the front app before the block: {inc.get('keys_before_block', 0)}")
-    lines.append(f"- Keys blocked during quarantine: {inc.get('blocked_count', 0)}")
+    lines.append(f"- Keys that got through to the front app before the block: {inc.get('keys_before_block', 0)}")
+    lines.append(f"- Keys blocked: {inc.get('blocked_count', 0)}")
     lines.append("")
     lines.append("## What happened")
     lines.append("")
@@ -197,18 +266,29 @@ def render_markdown(inc: dict, app_version: str) -> str:
     lines.append("")
     lines.append("## Captured text")
     lines.append("")
-    lines.append("Keys that reached the front app (typed before the decision):")
+    lines.append("Keys that got through to the front app (typed before the decision):")
     lines.append("")
     lines.append("```text")
     lines.append(inc.get("prefix_text", ""))
     lines.append("```")
     lines.append("")
-    lines.append("Keys dropped by DuckyGuard:")
+    lines.append("Keys blocked by DuckyGuard:")
     lines.append("")
     lines.append("```text")
     lines.append(inc.get("blocked_text", ""))
     lines.append("```")
     lines.append("")
+    script = reconstruct_script(inc.get("prefix_text", "") + inc.get("blocked_text", ""))
+    if script:
+        lines.append("## What it was trying to type (DuckyScript-style reconstruction)")
+        lines.append("")
+        lines.append("Rebuilt from the keystrokes above, not copied from the device. DuckyScript is a Hak5 name; "
+                     "DuckyGuard is not affiliated with Hak5.")
+        lines.append("")
+        lines.append("```text")
+        lines.extend(script[:200])
+        lines.append("```")
+        lines.append("")
     if an:
         if an.get("urls") or an.get("ips"):
             lines.append("## Indicators found in the text")
@@ -255,6 +335,15 @@ def render_markdown(inc: dict, app_version: str) -> str:
     lines.append("")
     lines.append("Generated by DuckyGuard. Everything in this file came from this Mac; nothing was sent anywhere.")
     return "\n".join(lines) + "\n"
+
+
+def export_incident_ocsf(inc: dict, exports_dir: str, app_version: str) -> str:
+    import json
+    from .store import write_private
+    os.makedirs(exports_dir, exist_ok=True)
+    path = os.path.join(exports_dir, f"duckyguard-incident-{inc['id']}.ocsf.json")
+    write_private(path, json.dumps(to_ocsf(inc, app_version), indent=2))
+    return path
 
 
 def export_incident(inc: dict, exports_dir: str, app_version: str) -> str:

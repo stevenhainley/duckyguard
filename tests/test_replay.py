@@ -41,5 +41,5 @@ def test_capture_replay_is_blocked(path, interval_ms):
 def test_capture_analysis_extracts_indicators(path):
     an = analyze_text(load_payload(path))
     assert an["urls"] or an["ips"]
-    assert an["mitre"][0]["id"] == "T1200"
+    assert [t["id"] for t in an["mitre"][:2]] == ["T1674", "T1200"]
     assert an["yara"] and "rule DuckyGuard_HID_payload" in an["yara"]

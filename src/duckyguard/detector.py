@@ -50,6 +50,33 @@ class KeyEvent:
     device_id: Optional[str] = None   # HID identity when known (not available via CGEvent)
 
 
+class HoldTracker:
+    """Measures how long each key was held, and hands each measurement out once.
+
+    ``take()`` returns the hold time of the key released since the last key-down, or None when
+    nothing was released in between (the previous key is still down: rollover, which hands do
+    and injectors do not).
+    """
+
+    def __init__(self) -> None:
+        self._down_at: Dict[object, float] = {}
+        self._last: Optional[float] = None
+
+    def key_down(self, key, ts: float) -> None:
+        self._down_at[key] = ts
+        if len(self._down_at) > 64:
+            self._down_at.clear()
+
+    def key_up(self, key, ts: float) -> None:
+        down = self._down_at.pop(key, None)
+        if down is not None:
+            self._last = max(0.0, ts - down)
+
+    def take(self) -> Optional[float]:
+        hold, self._last = self._last, None
+        return hold
+
+
 @dataclass
 class Verdict:
     block: bool
@@ -83,7 +110,15 @@ SUSPICIOUS_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"open\s+-a\s+Terminal", re.IGNORECASE), "opening Terminal"),
     (re.compile(r"osascript\s+-e", re.IGNORECASE), "osascript"),
     (re.compile(r"\|\s*(ba|z)?sh\b", re.IGNORECASE), "pipe to shell"),
+    # The usual first move of a macOS payload: Spotlight, then the name of a terminal, then Return.
+    (re.compile(r"(^|\n)\s*(terminal(\.app)?|iterm2?|script editor)\s*\n", re.IGNORECASE), "Spotlight to Terminal opener"),
 ]
+
+# A key released this soon after it was pressed was not pressed by a finger (humans: 60-150 ms).
+# Measured on a Flipper Zero: 1-2 ms at every typing speed, including jittered payloads.
+INSTANT_RELEASE_SEC = 0.010
+FAST_GAP_SEC = 0.020            # gaps this short for several keys in a row, with instant releases
+HOLD_ALERT_SEC = 30.0           # after a hold-time block, stay strict for this long
 
 MODIFIER_TOKENS = {"[shift]", "[shift_r]", "[ctrl]", "[ctrl_r]", "[alt]", "[alt_r]",
                    "[cmd]", "[cmd_r]", "[caps_lock]", "[fn]"}
@@ -122,6 +157,8 @@ class KeystrokeAnomalyDetector:
         self._holds: Deque[float] = collections.deque(maxlen=history)
         self._last_ts: Optional[float] = None
         self._burst_blocked = False     # current burst already flagged: stay blocked until a pause
+        self._instant_run: List[float] = []        # hold times of the consecutive instantly-released keys
+        self._hold_alert_until: Optional[float] = None   # survives reset(): a blocked injector is still plugged in
 
         # Counters surfaced in the UI
         self.total_keys = 0
@@ -139,6 +176,7 @@ class KeystrokeAnomalyDetector:
             self._holds.clear()
             self._last_ts = None
             self._burst_blocked = False
+            self._instant_run = []
 
     def observe(self, ev: KeyEvent) -> Verdict:
         """Score one key-down. Returns a Verdict; ``verdict.block`` is the decision."""
@@ -160,6 +198,7 @@ class KeystrokeAnomalyDetector:
                 v.features = {"source_pid": ev.source_pid}
                 return v
 
+            prev_ts = self._last_ts
             # Burst bookkeeping
             if self._last_ts is not None and (ev.timestamp - self._last_ts) > self.burst_gap_sec:
                 self._burst.clear()
@@ -174,6 +213,12 @@ class KeystrokeAnomalyDetector:
             self._burst.append(ev)
             if ev.hold_time is not None and ev.hold_time >= 0:
                 self._holds.append(ev.hold_time)
+            # Run of keys released almost instantly. Counted across bursts, so pauses do not hide it;
+            # one normally held key, or a key pressed while the previous one is still down, ends it.
+            if ev.hold_time is not None and 0 <= ev.hold_time < INSTANT_RELEASE_SEC:
+                self._instant_run.append(ev.hold_time)
+            else:
+                self._instant_run = []
             if ev.char and not ev.char.startswith("["):
                 self._text.append(ev.char)
             elif ev.char in ("\n", "\r"):
@@ -197,6 +242,8 @@ class KeystrokeAnomalyDetector:
                 self.blocks += 1
             self.recent_events.append({
                 "t": round(ev.timestamp, 3),
+                "gap_ms": round((ev.timestamp - prev_ts) * 1000, 1) if prev_ts is not None and ev.timestamp >= prev_ts else None,
+                "hold_ms": round(ev.hold_time * 1000, 1) if ev.hold_time is not None else None,
                 "cps": verdict.features.get("cps", 0.0),
                 "cv": verdict.features.get("cv"),
                 "burst": verdict.features.get("burst_len", 0),
@@ -267,6 +314,10 @@ class KeystrokeAnomalyDetector:
                 usb_age = None
         feats["new_keyboard_age_s"] = round(usb_age, 1) if usb_age is not None else None
         new_keyboard = usb_age is not None and usb_age <= self.usb_recent_sec
+
+        hold_verdict = self._hold_rules(feats, intervals, new_keyboard, usb_age)
+        if hold_verdict is not None:
+            return hold_verdict
 
         if n_keys < self.min_burst_for_verdict:
             return Verdict(False, 0.0, kind="buffering", features=feats,
@@ -352,6 +403,45 @@ class KeystrokeAnomalyDetector:
         else:
             explanation = "Looks like a person typing." if not reasons else "Fast, but still within human range."
         return Verdict(block, score, reasons, feats, kind, explanation)
+
+    def _hold_rules(self, feats: Dict[str, object], intervals: List[float], new_keyboard: bool,
+                    usb_age: Optional[float]) -> Optional[Verdict]:
+        """Rules that need no burst statistics: several keys in a row released faster than a finger can."""
+        run = len(self._instant_run)
+        feats["instant_release_run"] = run
+        if run < 2:
+            return None
+        now = self._last_ts or 0.0
+        on_alert = (self._hold_alert_until is not None
+                    and self._hold_alert_until - HOLD_ALERT_SEC <= now <= self._hold_alert_until)
+        fast = run >= 4 and len(intervals) >= 4 and max(intervals[-4:]) < FAST_GAP_SEC
+        rule = None
+        if on_alert:
+            rule = "M: instant-release typing resumed after a block, 2 keys"
+        elif fast:
+            rule = "J: 5 keys under 20 ms apart, each released instantly"
+        elif new_keyboard and run >= 4:
+            rule = "L: 4 keys released instantly, seconds after an untrusted keyboard appeared"
+        elif run >= 6:
+            rule = "K: 6 keys in a row released instantly"
+        if rule is None:
+            return None
+
+        med_ms = statistics.median(self._instant_run) * 1000
+        reasons = [f"{run} keys in a row were released within {max(1, round(med_ms))} ms of being pressed; "
+                   "a finger holds a key 60-150 ms"]
+        if fast:
+            reasons.append(f"the last 5 keys came less than {FAST_GAP_SEC * 1000:.0f} ms apart")
+        if new_keyboard and usb_age is not None:
+            reasons.append(f"an untrusted keyboard was plugged in {usb_age:.0f} s ago")
+        if on_alert:
+            reasons.append("DuckyGuard blocked the same kind of typing moments ago")
+        feats["rule"] = rule
+        feats["instant_release_median_ms"] = round(med_ms, 1)
+        self._hold_alert_until = now + HOLD_ALERT_SEC
+        explanation = (f"A keyboard pressed {run} keys in a row and let go of each within "
+                       f"{max(1, round(med_ms))} ms. A finger holds a key 60-150 ms. DuckyGuard blocked it.")
+        return Verdict(True, 0.9, reasons, feats, "machine", explanation)
 
     @staticmethod
     def _explain_block(feats: Dict[str, object], reasons: List[str]) -> str:

@@ -28,8 +28,8 @@ PLIST = {
     "NSHighResolutionCapable": True,
     "NSSupportsAutomaticGraphicsSwitching": True,
     # Shown by macOS next to the permission prompts.
-    "NSInputMonitoringUsageDescription": "DuckyGuard times keystrokes to tell a hand from a scripted keyboard.",
-    "NSAccessibilityUsageDescription": "DuckyGuard needs Accessibility to drop keystrokes from a device that types like a machine.",
+    "NSInputMonitoringUsageDescription": "DuckyGuard times keystrokes to tell a hand from a scripted keyboard. It keeps the text only of bursts it blocks.",
+    "NSAccessibilityUsageDescription": "DuckyGuard needs Accessibility to block keystrokes from a device that types like a machine.",
 }
 
 setup(

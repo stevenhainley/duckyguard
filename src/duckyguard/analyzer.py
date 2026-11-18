@@ -23,6 +23,7 @@ class ForensicThreatAnalyzer:
     BASE64_PATTERN = re.compile(r"[A-Za-z0-9+/]{20,}={0,2}")
 
     MITRE_MAP = {
+        "input_injection": ("T1674", "Input Injection", "Keystrokes typed by a device emulating a keyboard, at a speed or regularity no hand produces"),
         "hardware": ("T1200", "Hardware Additions", "Physical HID emulation device inserted (BadUSB/Rubber Ducky)"),
         "shell": ("T1059.004", "Command and Scripting Interpreter: Unix Shell", "Attempted execution of bash/zsh/sh commands"),
         "powershell": ("T1059.001", "Command and Scripting Interpreter: PowerShell", "Windows PowerShell script injection"),

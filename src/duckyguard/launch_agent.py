@@ -48,16 +48,21 @@ def is_enabled() -> bool:
     return os.path.exists(plist_path())
 
 
-def enable() -> str:
-    p = plist_path()
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    data = {
+def build_plist(keep_alive: bool = False) -> dict:
+    """keep_alive relaunches DuckyGuard after a crash or a kill, but not after a normal Quit (exit status 0)."""
+    return {
         "Label": LABEL,
         "ProgramArguments": program_arguments(),
         "RunAtLoad": True,
-        "KeepAlive": False,
+        "KeepAlive": {"SuccessfulExit": False} if keep_alive else False,
         "ProcessType": "Interactive",
     }
+
+
+def enable(keep_alive: bool = False) -> str:
+    p = plist_path()
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    data = build_plist(keep_alive)
     with open(p, "wb") as f:
         plistlib.dump(data, f)
     try:

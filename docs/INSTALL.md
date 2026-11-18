@@ -1,9 +1,14 @@
 # Installing DuckyGuard
 
-DuckyGuard is distributed as an **unsigned** app for now (no Apple Developer
-ID yet, see `docs/NOTARIZATION.md`). macOS will refuse to open it until you
-tell Gatekeeper once that you trust it. The steps below are the standard ones;
+DuckyGuard is **ad-hoc signed and not notarized** (no Apple Developer ID yet,
+see `docs/NOTARIZATION.md`). macOS will refuse to open it until you tell
+Gatekeeper once that you trust it. The steps below are the standard ones;
 nothing is bypassed permanently.
+
+An app that asks for Input Monitoring and Accessibility while unsigned is
+asking for a lot of trust. The source is in this repository and the build is
+one script (`packaging/build.sh`); building it yourself is a reasonable
+choice.
 
 ## Requirements
 
@@ -29,16 +34,14 @@ Open the DMG and drag **DuckyGuard** to **Applications**.
 
 ## 3. Open it the first time (Gatekeeper)
 
-macOS shows "DuckyGuard can't be opened because it is from an unidentified
-developer" or "Apple could not verify...". Pick one:
+macOS shows "Apple could not verify..." or a similar warning.
 
-**Right-click, Open**
-1. In Applications, right-click (or Control-click) DuckyGuard.
-2. Choose **Open**, then **Open** again in the dialog.
+1. Double-click DuckyGuard and dismiss the warning.
+2. Open System Settings › Privacy & Security, scroll to Security and click
+   **Open Anyway**.
 
-**Or, on macOS 15 and newer**
-1. Double-click DuckyGuard, dismiss the warning.
-2. System Settings, Privacy & Security, scroll to Security, click **Open Anyway**.
+Control-click › Open no longer skips this warning (Apple removed it in
+macOS 15).
 
 **Or, from Terminal** (removes the quarantine flag the browser attached):
 ```bash
@@ -47,26 +50,43 @@ xattr -dr com.apple.quarantine /Applications/DuckyGuard.app
 
 You only need to do this once per download.
 
-## 4. Grant the two permissions
+## 4. Turn on the two permissions
 
-DuckyGuard's first-run screen walks you through it, with buttons that open
-the right page of System Settings:
+DuckyGuard's first-run screen has a button for each that opens the right
+page of System Settings:
 
-- **Input Monitoring**: lets DuckyGuard see keystrokes system-wide so it can
-  time them. Without it DuckyGuard sees nothing.
-- **Accessibility**: lets DuckyGuard *drop* keystrokes. Without it DuckyGuard
-  can only warn.
+- **Input Monitoring** is macOS's name for letting an app see every key.
+  DuckyGuard uses the timing, and keeps the text only for bursts it blocks.
+  Without it DuckyGuard sees nothing and the status reads "Not protected".
+- **Accessibility** lets DuckyGuard block keys. Without it DuckyGuard can
+  only warn and the status reads "Can't block".
 
-System Settings, Privacy & Security, then each list. Turn on DuckyGuard. If
-it is not listed, click **+** and pick it from Applications. After a reinstall
-or upgrade of an unsigned app, macOS sometimes keeps a stale entry: remove
-DuckyGuard from the list with **-** and add it again.
+When you press the Accessibility button, DuckyGuard asks macOS to add it to
+the Accessibility list, so you only have to flip its switch. DuckyGuard
+re-checks both permissions every second and starts blocking as soon as
+Accessibility is on; no relaunch is needed for that one. After you turn on
+Input Monitoring, macOS may ask you to quit and reopen DuckyGuard.
+
+Because the build is ad-hoc signed, macOS may not recognise an updated copy
+as the same app. After an update you may have to grant both permissions
+again: remove DuckyGuard from each list with **-** and add it back.
+
+The same first-run screen lists the keyboards connected at that moment with
+a ticked box each ("Trust the keyboards connected now"). Leave your own
+keyboards ticked, or the next time one reconnects it will be held like any
+new keyboard.
 
 ## 5. Check it works
 
-Click **Test it safely** in DuckyGuard. It types a harmless sentence into its
-own window at machine speed; you should see a few characters land, the menu
-bar duck's shield turn red, and the rest of the sentence never arrive.
+Press **Run safe test** on the Overview (it is also in the menu bar menu and
+in Settings › About). DuckyGuard types one harmless sentence into its own
+window at 12 ms per key. You should see the first four or five characters
+appear in the test field, the status change to "Blocking", the duck's eyes
+turn red and the rest of the sentence never arrive.
+
+The test sentence contains no command and the test never presses Return. It
+types only while DuckyGuard's window is in front, and stops if you click
+another app.
 
 ## Install from Terminal (optional)
 
@@ -91,14 +111,26 @@ step 3 above until it is notarized.
 ```bash
 git clone https://github.com/stevenhainley/DuckyGuard.git
 cd DuckyGuard
-python3 -m venv .venv            # a framework build of Python 3.12+ (Homebrew or python.org)
-.venv/bin/pip install -e . py2app pytest hypothesis pillow "setuptools<75"   # py2app 0.28 breaks on newer setuptools
-./packaging/build.sh             # tests, icons, py2app, ad-hoc signature, DMG + SHA-256
+python3.14 -m venv .venv         # a framework build of Python 3.12 to 3.14 (Homebrew or python.org)
+.venv/bin/pip install -e . py2app pytest hypothesis pillow "setuptools<80"   # py2app 0.28 breaks on newer setuptools
+./packaging/build.sh             # tests, icons, py2app, ad-hoc signature (verified), DMG + SHA-256
 ```
+
+py2app 0.28 does not run on Python 3.15. If your `.venv` is newer, keep it for the tests and point the
+bundling step at an older interpreter that has py2app, rumps, pynput and PyObjC installed:
+`DUCKYGUARD_BUILD_PYTHON=/path/to/python3.14 ./packaging/build.sh`.
+
+The 3D plate in the window is a bundled script, `src/duckyguard/ui/plate.js`, built from `ui-src/plate.src.js`
+with three.js. It is checked in, so the app builds without Node. To change it: `cd ui-src && npm install && npm run build`.
 
 `dist/DuckyGuard.app` and `dist/DuckyGuard-<version>.dmg` are the outputs.
 The build is reproducible in the sense that the same checkout, Python and
 package versions give the same app contents; the DMG's timestamp differs.
+
+The 3D duck's script (`src/duckyguard/ui/plate.js`) is checked in already
+built. To change it, edit `ui-src/plate.src.js` and run `npm install` and
+`npm run build` in `ui-src/` (Node, esbuild and three.js). To rebuild its
+texture, run `.venv/bin/python packaging/make_plate_texture.py`.
 
 ## Uninstall
 
@@ -107,5 +139,5 @@ package versions give the same app contents; the DMG's timestamp differs.
 3. Optional: delete `~/Library/Application Support/DuckyGuard` (incidents,
    trusted keyboards, settings) and
    `~/Library/LaunchAgents/co.shindustries.duckyguard.plist` if you turned on
-   launch at login.
+   Open at login.
 4. Remove DuckyGuard from Input Monitoring and Accessibility in System Settings.

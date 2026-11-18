@@ -78,19 +78,29 @@ development). Corrupt JSON is renamed `*.corrupt` and defaults are used.
 
 ## UI
 
-`ui/index.html`, `app.css`, `app.js`, Funnel fonts and the icons are loaded
-with `loadFileURL` from inside the bundle. The page sends
+`ui/index.html`, `app.css`, `app.js`, `plate.js`, three bundled fonts and the
+icons are loaded with `loadFileURL` from inside the bundle. `plate.js` is the
+3D duck: three.js plus `ui-src/plate.src.js`, bundled with esbuild and checked
+in. It renders a depth-displaced mesh to an offscreen target, then prints it
+through an ordered dither. The page sends
 `{cmd: ...}` messages through `window.webkit.messageHandlers.dg`; Python
 replies with `dg.receive({type, data})` via `evaluateJavaScript` on the main
 thread. A snapshot (status, permissions, settings, keyboards, recent timing,
 incidents) is pushed once a second while the window is visible and
-immediately on engine events.
+immediately on engine events. Engine events can arrive on the keyboard tap's
+thread; `on_engine_event` only hands them to the main thread, where sounds,
+notifications and snapshots are made. Messages for the page that are sent
+before it has loaded are queued until it says `ready`. Incidents are kept in
+memory and re-read only when their folder changes. Page errors are sent back
+with a `log` command and printed to stderr.
 
 ## Permissions
 
 `permissions.py` uses `IOHIDCheckAccess` (Input Monitoring) and
 `AXIsProcessTrusted` (Accessibility). The active tap needs Accessibility;
 without it the engine starts a listen-only tap and reports `observing`.
+The app's one-second tick calls `Engine.refresh_permissions()`, which rebuilds
+the tap when a permission is granted or revoked after launch.
 
 ## Packaging
 
@@ -106,4 +116,6 @@ SHA-256. See `docs/INSTALL.md` and `docs/NOTARIZATION.md`.
 `ioreg`-based watcher, the focus-stealing "decoy sink" and the rumps-only
 tray. They are not built or imported by v2. The installed v1 bundle at
 `~/Applications/DuckyGuard.app` ran `python3 -m duckyguard.server` from this
-checkout; after v2 that module no longer exists at that path.
+checkout. `src/duckyguard/server.py` and `src/duckyguard/_v1/` are kept in the
+repository only for that old launcher; `packaging/build.sh` removes both from
+the app bundle, and the v2 app never imports them.

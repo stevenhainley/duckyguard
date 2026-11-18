@@ -1,0 +1,4 @@
+REM DuckyGuard test payload 4: waits 15 s after plug-in so the new-keyboard signal has expired, then types.
+DELAY 15000
+STRING_DELAY 100
+STRING DGTEST the quick brown fox jumps over the lazy dog 0123456789

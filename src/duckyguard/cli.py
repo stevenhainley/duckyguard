@@ -31,9 +31,11 @@ def main(argv=None) -> int:
     sim.add_argument("--preset", choices=["harmless", "plain", "human"], default="harmless")
     sim.add_argument("--interval", type=float, default=12.0, help="ms between keys")
     sim.add_argument("--delay", type=float, default=3.0, help="seconds before typing starts")
-    sub.add_parser("incidents", help="list saved incidents")
-    ex = sub.add_parser("export", help="export one incident as Markdown")
+    li = sub.add_parser("incidents", help="list saved incidents")
+    li.add_argument("--json", action="store_true", help="one JSON object per line, for scripts")
+    ex = sub.add_parser("export", help="export one incident as Markdown or OCSF JSON")
     ex.add_argument("incident_id")
+    ex.add_argument("--format", choices=["md", "ocsf"], default="md")
     sub.add_parser("bench", help="run the simulation harness")
     sub.add_parser("selftest", help="headless software self-test (no permissions needed)")
     args = ap.parse_args(argv)
@@ -84,18 +86,25 @@ def main(argv=None) -> int:
     if args.cmd == "incidents":
         from .store import Store
         for inc in Store().list_incidents():
-            print(f"{inc['id']}  {inc.get('summary', '')}")
+            if args.json:
+                v = inc.get("verdict") or {}
+                print(json.dumps({"id": inc["id"], "started_at": inc.get("started_at"), "summary": inc.get("summary", ""),
+                                  "rule": str((v.get("features") or {}).get("rule") or ""), "kind": v.get("kind", ""),
+                                  "keys_reached_app": inc.get("keys_before_block", 0), "keys_dropped": inc.get("blocked_count", 0),
+                                  "keyboard": (inc.get("keyboard") or {}).get("product", ""), "simulated": bool(inc.get("simulated"))}))
+            else:
+                print(f"{inc['id']}  {inc.get('summary', '')}")
         return 0
 
     if args.cmd == "export":
-        from .incidents import export_incident
+        from .incidents import export_incident, export_incident_ocsf
         from .store import Store
         s = Store()
         inc = s.get_incident(args.incident_id)
         if not inc:
             print("no such incident", file=sys.stderr)
             return 1
-        print(export_incident(inc, s.exports_dir, __version__))
+        print((export_incident_ocsf if args.format == "ocsf" else export_incident)(inc, s.exports_dir, __version__))
         return 0
 
     if args.cmd == "selftest":

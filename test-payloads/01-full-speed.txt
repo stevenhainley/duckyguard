@@ -1,0 +1,4 @@
+REM DuckyGuard test payload 1: full speed. Types one harmless sentence. Nothing is opened or run.
+REM Open a text editor, click in it, plug in, then run this script.
+DELAY 3000
+STRING DGTEST the quick brown fox jumps over the lazy dog 0123456789

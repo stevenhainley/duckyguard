@@ -1,0 +1,12 @@
+{
+  "name": "duckyguard-plate",
+  "private": true,
+  "description": "Source for the 3D plate in DuckyGuard's dashboard. `npm run build` writes ../src/duckyguard/ui/plate.js.",
+  "scripts": {
+    "build": "esbuild plate.src.js --bundle --minify --format=iife --target=safari15 --outfile=../src/duckyguard/ui/plate.js --legal-comments=inline"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.187.0"
+  }
+}

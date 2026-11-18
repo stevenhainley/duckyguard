@@ -16,6 +16,7 @@ ever written anywhere else and nothing is sent anywhere.
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import stat
@@ -34,6 +35,12 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "onboarded": False,
     "quarantine_seconds": 2.0,      # keep dropping keys this long after the last blocked key
     "score_software_input": False,  # expert: also score keystrokes typed by local programs
+    "hold_new_keyboards": True,     # drop every hardware key from the moment an untrusted keyboard appears until it is approved
+    "hold_seconds": 20.0,           # a hold nobody answers ends after this long (the keyboard stays untrusted)
+    "away_mode": False,             # holds never expire: nothing new can type until you approve it
+    "monitor_only": False,          # detect and record, but never drop a key (for trying DuckyGuard out)
+    "lock_on_block": False,         # lock the screen when a real attack is blocked
+    "keep_alive": False,            # with launch at login: relaunch if DuckyGuard is killed
 }
 
 
@@ -85,6 +92,8 @@ class Store:
         self._settings: Dict[str, Any] = dict(DEFAULT_SETTINGS)
         self._settings.update(self._read_json("settings.json", {}))
         self._trusted: Dict[str, dict] = self._read_json("trusted_devices.json", {})
+        self._incidents: Optional[List[dict]] = None     # newest first; re-read only when the folder changes
+        self._incidents_stamp: Optional[int] = None
 
     # ---------------------------------------------------------------- helpers
 
@@ -154,25 +163,33 @@ class Store:
         name = f"incident-{incident['id']}.json"
         p = os.path.join(self.incidents_dir, name)
         write_private(p, json.dumps(incident, indent=2))
+        self._incidents = None
         return p
 
     def list_incidents(self, limit: int = 200) -> List[dict]:
-        out: List[dict] = []
-        try:
-            names = sorted(os.listdir(self.incidents_dir), reverse=True)
-        except OSError:
-            return out
-        for n in names:
-            if not n.endswith(".json"):
-                continue
+        """Newest first. The files are read once and again only when the folder changes, so the
+        dashboard's once-a-second snapshot costs one stat() instead of a hundred file reads."""
+        with self._lock:
             try:
-                with open(os.path.join(self.incidents_dir, n), "r", encoding="utf-8") as f:
-                    out.append(json.load(f))
-            except (OSError, ValueError):
-                continue
-            if len(out) >= limit:
-                break
-        return out
+                stamp = os.stat(self.incidents_dir).st_mtime_ns
+            except OSError:
+                return []
+            if self._incidents is None or stamp != self._incidents_stamp:
+                out: List[dict] = []
+                try:
+                    names = sorted(os.listdir(self.incidents_dir), reverse=True)
+                except OSError:
+                    names = []
+                for n in names:
+                    if not n.endswith(".json"):
+                        continue
+                    try:
+                        with open(os.path.join(self.incidents_dir, n), "r", encoding="utf-8") as f:
+                            out.append(json.load(f))
+                    except (OSError, ValueError):
+                        continue
+                self._incidents, self._incidents_stamp = out, stamp
+            return copy.deepcopy(self._incidents[:limit])
 
     def get_incident(self, incident_id: str) -> Optional[dict]:
         p = os.path.join(self.incidents_dir, f"incident-{os.path.basename(incident_id)}.json")
@@ -186,6 +203,7 @@ class Store:
         p = os.path.join(self.incidents_dir, f"incident-{os.path.basename(incident_id)}.json")
         try:
             os.unlink(p)
+            self._incidents = None
             return True
         except OSError:
             return False
