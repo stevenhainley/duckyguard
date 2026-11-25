@@ -28,22 +28,39 @@ def run() -> int:
                 return i + 1
         return None
 
+    def spotlight_opener_block():
+        det = KeystrokeAnomalyDetector()
+        det.observe(KeyEvent(timestamp=0.0, char="[cmd]", modifier=True))
+        det.observe(KeyEvent(timestamp=0.010, char=" "))
+        t = 0.350
+        for idx, ch in enumerate("terminal\n"):
+            t += 0.025
+            if det.observe(KeyEvent(timestamp=t, char=ch)).block:
+                return idx + 1
+        return None
+
     results = {
         "version": __version__,
         "python": sys.version.split()[0],
         "package_path_is_inside_app": "Contents/Resources" in os.path.abspath(__file__),
         "ducky_8ms_blocked_at_key": first_block(0.008),
         "even_30ms_blocked_at_key": first_block(0.030),
+        "spotlight_opener_blocked_at_key": spotlight_opener_block(),
         "human_240ms_blocked_at_key": first_block(0.240),
     }
     ok = (results["ducky_8ms_blocked_at_key"] is not None
           and results["even_30ms_blocked_at_key"] is not None
+          and results["spotlight_opener_blocked_at_key"] is not None
+          and results["spotlight_opener_blocked_at_key"] <= 6
           and results["human_240ms_blocked_at_key"] is None)
     try:
         from .store import Store
         with tempfile.TemporaryDirectory() as d:
             s = Store(d)
-            results["store"] = "ok" if s.settings() is not None else "empty"
+            s.append_audit("selftest", {"version": __version__})
+            audit_ok = s.verify_audit()["ok"]
+            results["store"] = "ok" if (s.settings() is not None and audit_ok) else "empty"
+            ok = ok and audit_ok
     except Exception as e:  # report, do not hide
         results["store"] = f"error: {e}"
         ok = False

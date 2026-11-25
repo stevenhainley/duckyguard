@@ -1,4 +1,4 @@
-# DuckyGuard 2.1 features
+# DuckyGuard 2.2 features
 
 The canonical list. Every line is something the code in this repo does today;
 the "where" column names the screen it appears on. Marketing copy, the website
@@ -14,6 +14,7 @@ once**; **key press** is how long a key is down.
 |---|---|---|
 | Keystroke-timing detection | Judges each burst of hardware keystrokes by rate, rhythm, key press time, burst length and the text of the burst; machine-like bursts are blocked. | Runs in the background; Overview shows the verdict |
 | Key press rules | Injectors let go of each key within 1-2 ms. A run of such keys is blocked at any typing speed, including randomised delays. | Background |
+| Launcher and dropper sequence rules | A hardware `Cmd+Space` chord followed by a fast terminal name (rule P1) is blocked at 6 characters before Return opens the app, and jittered shell/dropper commands at `>= 18` keys/s (rule P2: `curl`, `python -c`, `security find-*-password`, `xattr -d com.apple.quarantine`, `launchctl`, `osascript`) are blocked up to 25% timing variation. | Background |
 | Real blocking | Blocked keys never get through to any app: the CGEvent tap returns the event as None. Needs the Accessibility permission. Keys typed before the decision (1 to 5 on a Flipper Zero in hardware runs; up to 20 without key press timing) do get through to the front app. | Overview status "Protected" / "Blocking" |
 | Can't block fallback | With Input Monitoring but no Accessibility, DuckyGuard still detects and records bursts but can only warn. A permission switched on later takes effect within about a second; the tap is rebuilt, no relaunch. | Status "Can't block" with an Open System Settings button |
 | Status words | One word per state, the same in the window and the menu: Protected, Keyboard held, Blocking, Paused, Can't block, Recording only, Not protected. Only Protected is drawn in the neutral colour. Before the first data arrives the window says "Starting…", never "Protected". | Overview, menu bar |
@@ -24,7 +25,8 @@ once**; **key press** is how long a key is down.
 | Keyboard inventory | Lists connected keyboards (name, maker, vendor/product id, transport, serial) from IOKit, and trusted keyboards that are not connected. | Devices |
 | Hold new keyboards | From the moment an untrusted keyboard appears, every hardware key (your own keyboard included) is blocked until you choose Keep blocked, Allow once or Always allow, or unplug it. If nobody chooses, the hold ends after the hold length and the keyboard may type; it stays untrusted and the timing rules still apply. Keep blocked lasts until the keyboard is unplugged. On the first key after a pause DuckyGuard rescans keyboards, so a device the background scan has not seen yet is still held. 0 of 124 characters got through on a Flipper Zero in three runs. Only the number of blocked keys is stored, never the keys. | Overview prompt, Devices, menu bar menu |
 | Hold length | 20 s (default), 1 min or 2 min. | Settings > Protection |
-| Lookalike check | A second device with the same identity as a connected keyboard, a trusted keyboard whose serial number changed, and a different device with the model numbers of a keyboard you trust are flagged. Duplicates and changed serials are held even though the name is trusted. USB identity strings can be set to anything, so this is a tripwire, not proof. | Devices, hold prompt |
+| Lookalike check | A second device with the same identity as a connected keyboard, a trusted keyboard whose serial number or SHA-256 descriptor fingerprint changed, and a different device with the model numbers of a keyboard you trust are flagged. Duplicates, changed serials and fingerprint mismatches are held even though the name is trusted. USB identity strings can be set to anything, so this is a tripwire, not proof. | Devices, hold prompt |
+| Lockdown mode | Holds every external keyboard plugged in while Lockdown is on, trusted ones included, and never lets the hold expire. If an untrusted external keyboard is already connected when Lockdown is switched on, it is held at once. | Menu bar, Settings > Protection, `duckyguard lockdown` |
 | Away mode | Holds never run out: nothing new can type until you are back to choose. | Settings > Protection |
 | Record only | Notes what it would have blocked and blocks nothing. The status reads "Recording only" and the menu bar shows the attention icon while it is on. | Settings > Advanced |
 | Lock the screen on a block | Optionally locks the screen when scripted typing is blocked (not for the safe test). Uses a private macOS call (no public one exists); not exercised on a live screen. | Settings > Protection |
@@ -55,7 +57,8 @@ once**; **key press** is how long a key is down.
 | Update notice (opt-in) | At most one HTTPS request a day to GitHub's releases API; shows a notice and the result under the switch, never downloads. Off by default. | Settings > General |
 | Private local storage | Everything lives in `~/Library/Application Support/DuckyGuard` (mode 0700, files 0600). No network use except the opt-in update check. The incident list is kept in memory and re-read only when the folder changes. | Settings > About |
 | Failures are shown | Missing permission, tap failure, export failure and update failure each show a sentence instead of silently doing nothing. An error after start shows a notice with Restart protection. A window that loses contact with the app says "Not connected". Errors on the page are written to the app's log. Corrupt settings are set aside, not fatal. | Overview, notice bar, toasts |
-| Command line | `duckyguard start / status / simulate / incidents / export / bench / selftest`. | Terminal |
+| Command line | `duckyguard start / status / devices / audit / lockdown / simulate / incidents / export / bench / selftest`. | Terminal |
+| Tamper-evident audit log | Security events (starts, pauses, keyboard attachments, holds, blocks, lockdown changes) are appended to `audit.jsonl` (mode 0600, 5 MB rotation) with a SHA-256 hash chain verified by `duckyguard audit --verify`. | Terminal (`duckyguard audit`) |
 | Ad-hoc signed build + DMG | `packaging/build.sh` produces `dist/DuckyGuard.app` and a DMG with SHA-256; install script and Homebrew cask template included. | Not a screen |
 
 How long keys stay blocked after the last blocked key of a burst is 2 s. It

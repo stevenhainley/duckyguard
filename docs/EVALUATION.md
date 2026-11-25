@@ -92,6 +92,8 @@ last 10 seconds. The decision rules (`src/duckyguard/detector.py`):
 | F | score >= 0.90 over 8 keys | everything at once |
 | G (added before release) | >= 40 keys/s, CV < 0.10, 6 keys | Rubber Ducky / Pico default speed, blocked on the 6th key instead of the 8th |
 | H (added before release) | untrusted keyboard seen in the last 10 s, >= 22 keys/s, CV < 0.08, 6 keys | fast metronomic burst right after a new keyboard appears |
+| P1 (2.2) | hardware `Cmd+Space` chord followed within 5 s by a fast terminal/launcher name (`>= 16` keys/s, CV `< 0.22`, 6 keys) | Spotlight-to-Terminal openers stopped before Return |
+| P2 (2.2) | shell or dropper command pattern, `>= 18` keys/s, CV `< 0.25`, 8 keys | jittered dropper commands that bypass rule E's 15% CV cap |
 | S (added before release) | the current burst was already blocked and has not paused > 350 ms | an attacker who slows down or adds jitter mid-payload to shake the detector |
 
 Human reference ranges used for the thresholds and the simulation:

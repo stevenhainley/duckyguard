@@ -110,9 +110,19 @@ SUSPICIOUS_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"open\s+-a\s+Terminal", re.IGNORECASE), "opening Terminal"),
     (re.compile(r"osascript\s+-e", re.IGNORECASE), "osascript"),
     (re.compile(r"\|\s*(ba|z)?sh\b", re.IGNORECASE), "pipe to shell"),
+    (re.compile(r"\bpython3?\s+-c\s+['\"]", re.IGNORECASE), "Python one-liner"),
+    (re.compile(r"\bsecurity\s+find-(generic|internet)-password\b", re.IGNORECASE), "Keychain password lookup"),
+    (re.compile(r"\bxattr\s+-[a-zA-Z]*d[a-zA-Z]*\s+com\.apple\.quarantine\b", re.IGNORECASE), "quarantine attribute strip"),
+    (re.compile(r"\blaunchctl\s+(load|bootstrap|submit)\b", re.IGNORECASE), "launchctl persistence"),
+    (re.compile(r"(&\s*disown\b|nohup\s+\S+.*&\s*exit\b)", re.IGNORECASE), "backgrounded shell exit"),
     # The usual first move of a macOS payload: Spotlight, then the name of a terminal, then Return.
     (re.compile(r"(^|\n)\s*(terminal(\.app)?|iterm2?|script editor)\s*\n", re.IGNORECASE), "Spotlight to Terminal opener"),
 ]
+
+# Launcher names typed right after a Cmd+Space chord, matched before Return can open the app.
+SPOTLIGHT_POST_CHORD_RE = re.compile(r"^\s*(termin|iterm|warp|alacrit|script\s*ed)", re.IGNORECASE)
+CMD_CHORD_WINDOW_SEC = 0.25     # max gap between Cmd key-down and Space for a GUI+SPACE chord
+SPOTLIGHT_WINDOW_SEC = 5.0      # Spotlight open delay before the payload types the app name
 
 # A key released this soon after it was pressed was not pressed by a finger (humans: 60-150 ms).
 # Measured on a Flipper Zero: 1-2 ms at every typing speed, including jittered payloads.
@@ -120,8 +130,10 @@ INSTANT_RELEASE_SEC = 0.010
 FAST_GAP_SEC = 0.020            # gaps this short for several keys in a row, with instant releases
 HOLD_ALERT_SEC = 30.0           # after a hold-time block, stay strict for this long
 
-MODIFIER_TOKENS = {"[shift]", "[shift_r]", "[ctrl]", "[ctrl_r]", "[alt]", "[alt_r]",
-                   "[cmd]", "[cmd_r]", "[caps_lock]", "[fn]"}
+MODIFIER_TOKENS = {"[shift]", "[shift_l]", "[shift_r]", "[ctrl]", "[ctrl_l]", "[ctrl_r]",
+                   "[alt]", "[alt_l]", "[alt_r]", "[alt_gr]", "[cmd]", "[cmd_l]", "[cmd_r]",
+                   "[caps_lock]", "[fn]"}
+CMD_TOKENS = {"[cmd]", "[cmd_l]", "[cmd_r]"}
 
 
 class KeystrokeAnomalyDetector:
@@ -159,6 +171,9 @@ class KeystrokeAnomalyDetector:
         self._burst_blocked = False     # current burst already flagged: stay blocked until a pause
         self._instant_run: List[float] = []        # hold times of the consecutive instantly-released keys
         self._hold_alert_until: Optional[float] = None   # survives reset(): a blocked injector is still plugged in
+        self._last_cmd_ts: Optional[float] = None
+        self._last_spotlight_ts: Optional[float] = None
+        self._post_spotlight: Deque[str] = collections.deque(maxlen=32)
 
         # Counters surfaced in the UI
         self.total_keys = 0
@@ -177,13 +192,19 @@ class KeystrokeAnomalyDetector:
             self._last_ts = None
             self._burst_blocked = False
             self._instant_run = []
+            self._last_cmd_ts = None
+            self._last_spotlight_ts = None
+            self._post_spotlight.clear()
 
     def observe(self, ev: KeyEvent) -> Verdict:
         """Score one key-down. Returns a Verdict; ``verdict.block`` is the decision."""
         with self._lock:
             self.total_keys += 1
 
-            if ev.modifier or (ev.char and ev.char.lower() in MODIFIER_TOKENS):
+            tok = (ev.char or "").lower()
+            if ev.modifier or (tok and tok in MODIFIER_TOKENS):
+                if (tok in CMD_TOKENS or "cmd" in tok) and not (ev.injected and not (self.test_mode or self.score_software)):
+                    self._last_cmd_ts = ev.timestamp
                 return Verdict(False, 0.0, kind="ignored", explanation="modifier key, not timed")
             if ev.repeat:
                 self.repeats_ignored += 1
@@ -219,6 +240,20 @@ class KeystrokeAnomalyDetector:
                 self._instant_run.append(ev.hold_time)
             else:
                 self._instant_run = []
+            if ev.char == " " and self._last_cmd_ts is not None and 0 <= (ev.timestamp - self._last_cmd_ts) <= CMD_CHORD_WINDOW_SEC:
+                self._last_spotlight_ts = ev.timestamp
+                self._last_cmd_ts = None
+                self._post_spotlight.clear()
+            else:
+                self._last_cmd_ts = None
+                if self._last_spotlight_ts is not None:
+                    if 0 <= (ev.timestamp - self._last_spotlight_ts) <= SPOTLIGHT_WINDOW_SEC:
+                        if ev.char and not ev.char.startswith("[") and ev.char not in ("\n", "\r"):
+                            self._post_spotlight.append(ev.char)
+                    else:
+                        self._last_spotlight_ts = None
+                        self._post_spotlight.clear()
+
             if ev.char and not ev.char.startswith("["):
                 self._text.append(ev.char)
             elif ev.char in ("\n", "\r"):
@@ -304,7 +339,16 @@ class KeystrokeAnomalyDetector:
             if pat.search(text):
                 pattern_name = name
                 break
+        spotlight_chord = False
+        if (self._last_spotlight_ts is not None
+                and self._last_ts is not None
+                and 0 <= (self._last_ts - self._last_spotlight_ts) <= SPOTLIGHT_WINDOW_SEC
+                and SPOTLIGHT_POST_CHORD_RE.search("".join(self._post_spotlight))):
+            spotlight_chord = True
+            if pattern_name is None:
+                pattern_name = "Spotlight to Terminal opener"
         feats["pattern"] = pattern_name
+        feats["spotlight_chord"] = spotlight_chord
 
         usb_age = None
         if self.usb_age_callback is not None:
@@ -391,8 +435,12 @@ class KeystrokeAnomalyDetector:
             block, rule = True, "G: >=40 keys/s with low variation, 6 keys"
         elif new_keyboard and cps >= 22 and cv < 0.08 and n_keys >= 6:
             block, rule = True, "H: >=22 keys/s, metronomic burst seconds after an untrusted keyboard appeared, 6 keys"
+        elif spotlight_chord and pattern_name and n_keys >= 6 and cps >= 16 and cv < 0.22:
+            block, rule = True, "P1: Spotlight chord followed by fast terminal opener, 6 keys"
         elif (pattern_name or new_keyboard) and score >= 0.75 and n_keys >= 8 and cv < 0.15:
             block, rule = True, "E: corroborated by payload text or a fresh untrusted keyboard"
+        elif pattern_name and n_keys >= 8 and cps >= 18 and cv < 0.25:
+            block, rule = True, "P2: shell or dropper command typed at machine speed"
         elif score >= 0.90 and n_keys >= 8:
             block, rule = True, "F: every signal at once"
         feats["rule"] = rule

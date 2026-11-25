@@ -133,6 +133,16 @@
    "label": "Espressif ESP32 board (TinyUSB)",
    "vid": "303a",
    "source": "https://raw.githubusercontent.com/espressif/usb-pids/main/README.md"
+  },
+  {
+   "label": "SparkFun Pro Micro (ATmega32U4 HID board used in DIY BadUSB builds)",
+   "vid": "1b4f",
+   "source": "https://raw.githubusercontent.com/sparkfun/Arduino_Boards/main/sparkfun/avr/boards.txt"
+  },
+  {
+   "label": "Seeed Studio XIAO board (TinyUSB / Arduino HID)",
+   "vid": "2886",
+   "source": "https://raw.githubusercontent.com/Seeed-Studio/ArduinoCore-samd/master/boards.txt"
   }
  ]
 }

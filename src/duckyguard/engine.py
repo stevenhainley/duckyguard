@@ -148,11 +148,13 @@ class Engine:
             self.started_at = time.time()
             self.status = STATUS_PROTECTED if self._can_block else STATUS_OBSERVING
             self.store.set("protection_enabled", True)
+            self._audit("engine_started", {"status": self.status, "can_block": self._can_block})
             self._emit("status")
             return self.status
 
     def stop(self, persist: bool = True) -> None:
         with self._lock:
+            was_running = self._running
             if self._listener is not None:
                 try:
                     self._listener.stop()
@@ -165,6 +167,8 @@ class Engine:
             self.status = STATUS_PAUSED
             if persist:
                 self.store.set("protection_enabled", False)
+            if was_running or persist:
+                self._audit("engine_stopped", {"persist": bool(persist)})
             self._emit("status")
 
     def is_running(self) -> bool:
@@ -175,6 +179,7 @@ class Engine:
         without, it stays off (across relaunches) until the user resumes."""
         self.stop(persist=seconds is None)
         self.paused_until = None if seconds is None else (time.time() if now is None else now) + float(seconds)
+        self._audit("engine_paused", {"seconds": None if seconds is None else float(seconds)})
         self._emit("status")
 
     def resume_if_due(self, now: Optional[float] = None) -> bool:
@@ -381,6 +386,21 @@ class Engine:
             self.store.save_incident(inc)
         except Exception as e:
             self._error = f"could not save incident: {e}"
+        feats = (inc.get("verdict") or {}).get("features") or {}
+        kb_info = inc.get("keyboard") or {}
+        self._audit("block_finished", {
+            "incident_id": inc.get("id"),
+            "rule": str(feats.get("rule") or ""),
+            "cps": feats.get("cps"),
+            "cv": feats.get("cv"),
+            "median_hold_ms": feats.get("median_hold_ms") if feats.get("median_hold_ms") is not None else feats.get("instant_release_median_ms"),
+            "keys_before_block": inc.get("keys_before_block", 0),
+            "blocked_count": inc.get("blocked_count", 0),
+            "simulated": bool(inc.get("simulated")),
+            "can_drop": bool(inc.get("can_drop", True)),
+            "keyboard": kb_info.get("key", ""),
+            "fingerprint_short": kb_info.get("fingerprint_short", ""),
+        })
         self.last_incident = inc
         self._emit("block_finished", incident=inc)
         # Hold the alert state briefly so the menu bar is noticeable, then settle.
@@ -392,18 +412,53 @@ class Engine:
 
     # ------------------------------------------------------------- devices
 
+    def set_lockdown(self, enabled: bool) -> bool:
+        """Enable or disable Lockdown mode. When turned on, any connected untrusted external keyboard
+        is placed on hold right away, and any external keyboard plugged in afterwards (even a trusted one)
+        is held without a countdown until approved."""
+        on = bool(enabled)
+        self.store.set("lockdown_mode", on)
+        self._audit("lockdown_changed", {"enabled": on})
+        if on and self.dropping() and self._hold is None:
+            for kb in self.keyboards.keyboards():
+                if not kb.built_in and not self.store.is_trusted(kb.key):
+                    flags = identity_flags(kb, self.keyboards.keyboards(), self.store.trusted_devices())
+                    if "lockdown active" not in flags:
+                        flags.append("lockdown active")
+                    self._start_hold(kb, flags)
+                    break
+        self._emit("status")
+        return on
+
     def _on_new_keyboard(self, kb: Keyboard) -> None:
         flags = identity_flags(kb, self.keyboards.keyboards(), self.store.trusted_devices())
-        suspicious = "duplicate" in flags or "serial changed" in flags
+        lockdown = bool(self.store.get("lockdown_mode", False)) and not kb.built_in
+        if lockdown and "lockdown active" not in flags:
+            flags = list(flags) + ["lockdown active"]
+        suspicious = ("duplicate" in flags or "serial changed" in flags
+                      or "fingerprint mismatch" in flags or lockdown)
         trusted = (self.store.is_trusted(kb.key) or kb.built_in) and not suspicious
         if suspicious:
             self.keyboards.mark_untrusted(kb)
-        held = not trusted and bool(self.store.get("hold_new_keyboards", True)) and self.dropping()
-        self._emit("keyboard_attached", keyboard=kb.as_dict(), trusted=trusted, flags=flags, held=held)
+        held = not trusted and (bool(self.store.get("hold_new_keyboards", True)) or lockdown) and self.dropping()
+        kb_dict = kb.as_dict()
+        self._audit("keyboard_attached", {
+            "key": kb.key,
+            "product": kb.product,
+            "vendor_hex": kb_dict.get("vendor_hex"),
+            "product_hex": kb_dict.get("product_hex"),
+            "serial": kb.serial,
+            "fingerprint_short": kb_dict.get("fingerprint_short"),
+            "trusted": trusted,
+            "flags": list(flags),
+            "held": held,
+        })
+        self._emit("keyboard_attached", keyboard=kb_dict, trusted=trusted, flags=flags, held=held)
         if held:
             self._start_hold(kb, flags)
 
     def _on_keyboard_removed(self, key: str) -> None:
+        self._audit("keyboard_removed", {"key": key})
         self._emit("keyboard_removed", key=key)
         if self._hold is not None and self._hold["key"] == key:
             self._end_hold("unplugged")
@@ -447,7 +502,8 @@ class Engine:
         if h is None or injected:
             return False
         now = time.time() if now is None else now
-        if not h["blocked"] and not self.store.get("away_mode", False) and now > h["until"]:
+        no_expiry = bool(self.store.get("away_mode", False)) or bool(self.store.get("lockdown_mode", False))
+        if not h["blocked"] and not no_expiry and now > h["until"]:
             self._end_hold("expired")
             return False
         return True
@@ -498,6 +554,12 @@ class Engine:
                 self.last_incident = inc
             except Exception as e:
                 self._error = f"could not save incident: {e}"
+        self._audit("hold_ended", {
+            "key": h["key"],
+            "product": (h.get("keyboard") or {}).get("product", ""),
+            "result": result,
+            "dropped": h["dropped"],
+        })
         self._emit("hold_ended", result=result, dropped=h["dropped"], keyboard=h["keyboard"])
 
     def trust_keyboard(self, key: str) -> bool:
@@ -591,7 +653,8 @@ class Engine:
             {"id": "hold_time", "label": "Hold-time rules", "on": True, "note": "Keys released faster than a finger can."},
             {"id": "keyboard_hold", "label": "Hold new keyboards", "on": bool(g("hold_new_keyboards", True)) and drop,
              "note": "Blocks every key until you choose what to do with a new keyboard. Your own keyboard is off too."},
-            {"id": "impostor", "label": "Lookalike check", "on": True, "note": "Duplicates, changed serials and lookalikes of keyboards you trust."},
+            {"id": "impostor", "label": "Lookalike check", "on": True, "note": "Duplicates, changed serials, descriptor fingerprint changes and lookalikes of keyboards you trust."},
+            {"id": "lockdown", "label": "Lockdown mode", "on": bool(g("lockdown_mode", False)), "note": "Holds every new external keyboard, trusted ones included, with no countdown."},
             {"id": "away_mode", "label": "Away mode", "on": bool(g("away_mode", False)), "note": "Holds never expire while you are gone."},
             {"id": "lock_on_block", "label": "Lock the screen on a block", "on": bool(g("lock_on_block", False)), "note": "Locks the screen when an attack is blocked."},
             {"id": "keep_alive", "label": "Restart if it stops", "on": bool(g("keep_alive", False)), "note": "Starts DuckyGuard again if it is killed."},
@@ -603,6 +666,12 @@ class Engine:
         d = kb.as_dict()
         d["trusted"] = self.store.is_trusted(kb.key) or kb.built_in
         return d
+
+    def _audit(self, event: str, details: Optional[dict] = None) -> None:
+        try:
+            self.store.append_audit(event, details)
+        except Exception:
+            pass
 
     def _emit(self, kind: str, **payload) -> None:
         if self.on_event is None:

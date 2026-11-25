@@ -79,6 +79,8 @@ def analyze_text(text: str) -> dict:
         techniques.append(a.MITRE_MAP["ingress"])
     if re.search(r"\b(bash|zsh|sh|chmod|chown)\b", clean, re.IGNORECASE):
         techniques.append(a.MITRE_MAP["shell"])
+    if re.search(r"\bpython3?\s+-c\b", clean, re.IGNORECASE):
+        techniques.append(a.MITRE_MAP["python"])
     if re.search(r"\b(powershell|cmd\.exe|Invoke-Expression)\b", clean, re.IGNORECASE):
         techniques.append(a.MITRE_MAP["powershell"])
     if "osascript" in clean.lower():
@@ -87,8 +89,12 @@ def analyze_text(text: str) -> dict:
         techniques.append(a.MITRE_MAP["obfuscation"])
     if urls or ips:
         techniques.append(a.MITRE_MAP["c2"])
-    if "launchagents" in clean.lower() or "crontab" in clean.lower():
+    if "launchagents" in clean.lower() or "crontab" in clean.lower() or re.search(r"\blaunchctl\s+(load|bootstrap|submit)\b", clean, re.IGNORECASE):
         techniques.append(a.MITRE_MAP["persistence"])
+    if re.search(r"\bsecurity\s+find-(generic|internet)-password\b", clean, re.IGNORECASE):
+        techniques.append(a.MITRE_MAP["keychain"])
+    if re.search(r"\bxattr\s+-[a-zA-Z]*d[a-zA-Z]*\s+com\.apple\.quarantine\b", clean, re.IGNORECASE):
+        techniques.append(a.MITRE_MAP["gatekeeper"])
     # T1674 (Input Injection) and T1200 (Hardware Additions) describe what DuckyGuard watches for; they
     # are listed for every incident because the detection itself is the evidence.
     techniques.insert(0, a.MITRE_MAP["hardware"])
@@ -257,6 +263,8 @@ def render_markdown(inc: dict, app_version: str) -> str:
         lines.append(f"- {kb.get('product', '?')} ({kb.get('manufacturer', '') or 'unknown maker'}), "
                      f"vendor {kb.get('vendor_hex', '????')} product {kb.get('product_hex', '????')}, "
                      f"transport {kb.get('transport', '?')}, serial {kb.get('serial') or 'none'}")
+        if kb.get("fingerprint_short") or kb.get("fingerprint"):
+            lines.append(f"- Descriptor SHA-256: `{kb.get('fingerprint') or kb.get('fingerprint_short')}`")
         if kb.get("vendor_note"):
             lines.append(f"- Vendor id note: {kb['vendor_note']}")
         lines.append("- Attribution is by time: this keyboard appeared shortly before the burst. "

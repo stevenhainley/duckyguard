@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="duckyguard",
-    version="2.1.0",
+    version="2.2.0",
     author="Steven Hainley",
     description="Blocks keystroke-injection devices (Rubber Ducky, Flipper Zero) on macOS by typing rhythm",
     long_description=open("README.md").read(),

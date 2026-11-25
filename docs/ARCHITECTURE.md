@@ -72,9 +72,11 @@ burst to the most recent untrusted keyboard.
 ## Storage
 
 `store.py`: one folder, created 0700, every file written atomically with
-0600. `settings.json`, `trusted_devices.json`, `incidents/*.json`,
-`exports/*.md`. `DUCKYGUARD_HOME` overrides the location (used by tests and
-development). Corrupt JSON is renamed `*.corrupt` and defaults are used.
+0600. `settings.json`, `trusted_devices.json` (with SHA-256 descriptor pins),
+`audit.jsonl` (SHA-256 hash-chained event log with 5 MB rotation),
+`incidents/*.json`, `exports/*.md`. `DUCKYGUARD_HOME` overrides the location
+(used by tests and development). Corrupt JSON is renamed `*.corrupt` and
+defaults are used.
 
 ## UI
 

@@ -1,6 +1,18 @@
 # Changelog
 
-## 2.1.0 (2026-11-11, not yet published)
+## 2.2.0 (2026-11-25)
+
+### Added
+- Spotlight chord and launcher heuristics (rule P1): a hardware `Cmd+Space` chord followed within 5 seconds by a fast terminal or script launcher (`terminal`, `iterm`, `warp`, `alacritty`, `script editor`) is blocked at the 6th character (`termin`), before Return can open the terminal, even with up to 22% timing jitter.
+- Jittered shell and dropper rule (rule P2) plus macOS payload signatures: inline `python -c`, `security find-*-password` Keychain reads, `xattr -d com.apple.quarantine` strips, `launchctl` persistence, and `nohup ... & exit` backgrounders are flagged and blocked when typed at machine speed (`>= 18` keys/s, CV `< 0.25`), closing a gap where 15-24% jitter bypassed rule E.
+- Conditional MITRE ATT&CK mappings for `T1059.006` (Python), `T1555.001` (Keychain), and `T1553.001` (Gatekeeper Bypass) when those commands appear in captured text.
+- Lockdown mode (menu bar, Settings > Protection, and `duckyguard lockdown on|off`): holds every newly connected external USB or Bluetooth keyboard without a countdown, including keyboards already on your trust list, until you approve with the trackpad or mouse. Turning Lockdown on while an untrusted external keyboard is plugged in holds it immediately. Turning Lockdown off in the window requires a pointer click.
+- SHA-256 hardware descriptor fingerprint pinning: each keyboard's normalized `vid`, `pid`, `transport`, `manufacturer`, `product`, and `serial` are hashed and pinned in `trusted_devices.json`. A device matching a trusted lookup key with altered USB strings triggers `fingerprint mismatch` and is held. Incident Markdown reports and the Devices view display the descriptor hash.
+- `duckyguard devices` CLI subcommand (`--json`, `--export`, `--import [--replace]`, `--trust`, `--untrust`) for inspecting connected keyboards and moving pinned trust policies between Macs.
+- Tamper-evident `audit.jsonl` forensic log (`0600`, capped at 5 MB with rotation) recording engine starts/pauses, keyboard attachments/removals, holds, blocks, and lockdown changes in a SHA-256 hash chain (`prev_hash` -> `hash`), plus `duckyguard audit` (`--json`, `--limit`, `--verify`).
+- SparkFun Pro Micro (`1b4f`) and Seeed Studio XIAO (`2886`) hobby HID board entries with upstream board definitions cited.
+
+## 2.1.0 (2026-11-19)
 
 ### Added
 - First hardware test: a Flipper Zero on macOS 26 (`docs/EVALUATION.md` section 0, `bench/hardware/`, `captures/hardware/`).

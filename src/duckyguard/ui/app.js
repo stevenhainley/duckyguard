@@ -149,7 +149,7 @@
         text = (k.vendor_note ? "Identified as " + idNote(k) + "." : `${name} is not one of your trusted keyboards.`) + " Nothing it types gets through until you choose.";
         acts = [["keep", "Keep blocked", 1], ["allow-once", "Allow once"], ["allow-always", "Always allow"]];
         const left = Math.ceil(hold.until - s.now);
-        aside = "Your own keyboard is off too until you choose. Use the trackpad or mouse. " + (set.away_mode ? "Away mode is on, so it stays held until you choose."
+        aside = "Your own keyboard is off too until you choose. Use the trackpad or mouse. " + (set.lockdown_mode ? "Lockdown mode is on, so even trusted external keyboards stay held until you choose." : set.away_mode ? "Away mode is on, so it stays held until you choose."
           : left > 0 ? `If you do nothing, this keyboard can type in <b>${left} s</b>. Fast scripted typing is still blocked.` : "The hold is ending.");
       }
     } else if (st === "alert") text = (v.explanation || "Typing no hand could produce was blocked.") + (S.inTest || s.in_test ? " This was the safe test: nothing was plugged in." : " Unplug the device. Your keyboard works again two seconds after it stops typing.");
@@ -253,7 +253,7 @@
           : k.built_in ? "" : k.trusted ? `<button class="ghost" type="button" data-untrust="${esc(k.key)}">Stop trusting</button>` : `<button class="ghost" type="button" data-trust="${esc(k.key)}">Trust</button>`;
         return `<div class="row"><div><h3>${esc(k.product || "Unnamed keyboard")}</h3>
           ${k.vendor_note ? `<p>Identified as ${esc(idNote(k))}.</p>` : ""}
-          <div class="meta">${esc(k.vendor_hex)}:${esc(k.product_hex)} · ${esc(k.transport || "?")}${k.vendor_name ? " · registered to " + esc(k.vendor_name) : ""}${k.manufacturer ? " · says " + esc(k.manufacturer) : ""} · serial ${esc(k.serial || "none")}</div></div>
+          <div class="meta">${esc(k.vendor_hex)}:${esc(k.product_hex)} · ${esc(k.transport || "?")}${k.vendor_name ? " · registered to " + esc(k.vendor_name) : ""}${k.manufacturer ? " · says " + esc(k.manufacturer) : ""} · serial ${esc(k.serial || "none")}${k.fingerprint_short ? " · pin " + esc(k.fingerprint_short) : ""}</div></div>
           <div class="acts"><span class="chip ${k.trusted || k.built_in ? "on" : ""}">${state}</span>${acts}</div></div>`;
       }).join("") || `<p class="empty">DuckyGuard cannot list keyboards. Check Input Monitoring in Settings.</p>`);
       const gone = Object.entries(trusted).filter(([key]) => !kbs.some(k => k.key === key));
@@ -266,6 +266,7 @@
   const SETTINGS = {
     "set-protect": [
       ["hold_new_keyboards", "Hold new keyboards", "Block every key from the moment an untrusted keyboard appears until you choose. Your own keyboard is off too while it waits."],
+      ["lockdown_mode", "Lockdown mode", "Hold every external keyboard plugged in from now on, trusted ones included, with no countdown."],
       ["away_mode", "Away mode", "Holds never run out. Nothing new can type until you are back to choose."],
       ["lock_on_block", "Lock the screen on a block", "Lock the screen when scripted typing is blocked."],
     ],
@@ -280,7 +281,7 @@
       ["score_software_input", "Also judge typing from apps", "Password managers and text expanders will be blocked."],
     ],
   };
-  const LOWERS = { monitor_only: true, hold_new_keyboards: false };        // the value that turns protection down
+  const LOWERS = { monitor_only: true, hold_new_keyboards: false, lockdown_mode: false };        // the value that turns protection down
   const HOLD_FOR = [[20, "20 s"], [60, "1 min"], [120, "2 min"]];
   function settings(s) {
     const set = Object.assign({}, s.settings || {}, { launch_at_login: s.launch_at_login });
@@ -358,7 +359,7 @@
   // ───────────────────────────────────────────────────────────── preview (index.html?preview in a browser, no app behind the page)
   const Mock = (() => {
     const now = () => Date.now() / 1000;
-    const M = { settings: { onboarded: q.get("onboard") !== "1", hold_new_keyboards: true, hold_seconds: 20, away_mode: false, monitor_only: false, lock_on_block: false, keep_alive: false, quiet_mode: false, check_updates: false, score_software_input: false },
+    const M = { settings: { onboarded: q.get("onboard") !== "1", hold_new_keyboards: true, hold_seconds: 20, lockdown_mode: false, away_mode: false, monitor_only: false, lock_on_block: false, keep_alive: false, quiet_mode: false, check_updates: false, score_software_input: false },
       running: true, status: "protected", pausedUntil: null, recent: [], incidents: [], hold: null, trusted: {}, blocks: 0, keys: 0, verdict: null, launch: false, perms: { input_monitoring: true, accessibility: true }, error: null };
     const mine = { key: "0000:0000:FIFO:Apple Internal Keyboard / Trackpad", product: "Apple Internal Keyboard / Trackpad", manufacturer: "Apple", vendor_hex: "0000", product_hex: "0000", vendor_name: "", vendor_note: "", serial: "", transport: "FIFO", built_in: true };
     const desk = { key: "05ac:024f:USB:Keychron K2", product: "Keychron K2", manufacturer: "Keychron", vendor_hex: "05ac", product_hex: "024f", vendor_name: "Apple, Inc.", vendor_note: "", serial: "", transport: "USB", built_in: false };
@@ -373,13 +374,13 @@
       if (M.pausedUntil && now() > M.pausedUntil) { M.pausedUntil = null; M.running = true; M.status = "protected"; }
       if (M.running && !M.hold && M.status === "protected" && n > nextAt) { if (left <= 0) { left = 6 + Math.floor(Math.random() * 20); nextAt = n + 600 + Math.random() * 1500; } else { left--; const g = n - lastKey > 500 ? 600 : 62 * Math.exp(1.25 * Math.random() + .35 * Math.random()); key(g, 70 + 55 * Math.random(), "human"); lastKey = n; nextAt = n + Math.min(g, 400); } }
       if (M.hold && M.hold.dropped < 124) M.hold.dropped = Math.min(124, M.hold.dropped + 2);
-      if (M.hold && !M.hold.blocked && !M.settings.away_mode && now() > M.hold.until) endHold("expired");
+      if (M.hold && !M.hold.blocked && !M.settings.away_mode && !M.settings.lockdown_mode && now() > M.hold.until) endHold("expired");
       setTimeout(loop, 50);
     }
     function incident(kind, extra) { const id = new Date().toISOString().replace(/\D/g, "").slice(0, 14) + M.incidents.length; M.incidents.unshift(Object.assign({ id, started_at: now(), simulated: false, can_drop: true, keyboard: kind === "hold" ? flip : null, prefix_text: "", blocked_text: "", analysis: null }, extra)); }
     function endHold(result) { const h = M.hold; M.hold = null; M.status = "protected"; kbs = kbs.filter(k => k !== flip); const text = `Flipper Zero was held as soon as it was plugged in. ${h.dropped} keys were blocked. None got through.`;
       incident("hold", { hold_result: result, keys_before_block: 0, blocked_count: h.dropped, summary: text, explanation: text, verdict: { kind: "hold", reasons: [], features: { rule: "Q: new keyboard held until you choose" } } }); if (result === "allowed") M.trusted[flip.key] = flip; }
-    function snap() { return { version: "2.1.0", status: M.status, running: M.running, can_block: M.perms.accessibility, now: now(), paused_until: M.pausedUntil, error: M.error,
+    function snap() { return { version: "2.2.0", status: M.status, running: M.running, can_block: M.perms.accessibility, now: now(), paused_until: M.pausedUntil, error: M.error,
         permissions: Object.assign({ can_observe: M.perms.input_monitoring, can_block: M.perms.accessibility }, M.perms), settings: M.settings, launch_at_login: M.launch,
         idle_s: now() - t, keys_seen: M.keys, blocks: M.blocks, in_quarantine: M.status === "alert", last_verdict: M.verdict, recent: M.recent, keyboards: kbs.map(k => Object.assign({ trusted: k.built_in || !!M.trusted[k.key] }, k)), trusted: M.trusted, hold: M.hold, secure_input: false,
         incidents: M.incidents, data_dir: "~/Library/Application Support/DuckyGuard", project_url: "https://github.com/stevenhainley/DuckyGuard", update: null,

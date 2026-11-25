@@ -26,12 +26,15 @@ class ForensicThreatAnalyzer:
         "input_injection": ("T1674", "Input Injection", "Keystrokes typed by a device emulating a keyboard, at a speed or regularity no hand produces"),
         "hardware": ("T1200", "Hardware Additions", "Physical HID emulation device inserted (BadUSB/Rubber Ducky)"),
         "shell": ("T1059.004", "Command and Scripting Interpreter: Unix Shell", "Attempted execution of bash/zsh/sh commands"),
+        "python": ("T1059.006", "Command and Scripting Interpreter: Python", "Attempted inline python -c command execution"),
         "powershell": ("T1059.001", "Command and Scripting Interpreter: PowerShell", "Windows PowerShell script injection"),
         "applescript": ("T1059.002", "Command and Scripting Interpreter: AppleScript", "macOS osascript automated execution"),
         "ingress": ("T1105", "Ingress Tool Transfer", "Automated remote payload retrieval (curl/wget/certutil)"),
         "obfuscation": ("T1027", "Obfuscated Files or Information", "Base64 or encoded command payload detected"),
         "c2": ("T1071.001", "Application Layer Protocol: Web Protocols", "HTTP/HTTPS communication to external C2 infrastructure"),
         "persistence": ("T1547.011", "Boot or Logon Autostart Execution: Plist Modification", "macOS LaunchAgent/LaunchDaemon persistence"),
+        "keychain": ("T1555.001", "Credentials from Password Stores: Keychain", "Attempted macOS Keychain credential lookup"),
+        "gatekeeper": ("T1553.001", "Subvert Trust Controls: Gatekeeper Bypass", "Attempted removal of com.apple.quarantine attribute"),
     }
 
     def __init__(self, reports_dir: str):

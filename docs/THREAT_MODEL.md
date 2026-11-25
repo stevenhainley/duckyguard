@@ -1,4 +1,4 @@
-# DuckyGuard threat model (v2.1)
+# DuckyGuard threat model (v2.2)
 
 ## What DuckyGuard defends against
 
@@ -32,7 +32,7 @@ does not say).
 |---|---|---|
 | Payloads short enough to finish in 4 keys, from a keyboard that is already trusted or was allowed | the timing decision needs a few keys to measure; the hold stops these outright for untrusted keyboards | do not allow a keyboard you did not plug in |
 | A held keyboard nobody answers for | the hold ends after the hold length (20 s by default) and the keyboard may type; only the timing rules stand between it and the Mac after that | turn on Away mode when you leave the Mac unlocked, or lock the screen |
-| A device that copies a trusted keyboard's name and model numbers exactly while that keyboard is unplugged | identity strings are whatever the device says; only duplicates and serial changes are detectable | the timing and key press rules still apply to it |
+| A device that copies a trusted keyboard's name and model numbers exactly while that keyboard is unplugged | identity strings are whatever the device says; duplicates, serial changes, and SHA-256 descriptor mismatches (such as a different manufacturer string) are caught, while an exact byte-for-byte clone is not distinguishable from IOKit alone | turn on Lockdown mode when away from your desk keyboard (holds every external keyboard, trusted ones included, with no countdown); timing and key press rules still apply |
 | Typing into a password field (macOS Secure Input) | event taps receive no keys while Secure Input is on | DuckyGuard shows a notice; the hold cannot block keys during it |
 | Slow payloads with randomised gaps **and** a scripted 60 ms+ key press | they look human on every signal; default injector firmware lets go of keys in 1-2 ms and is caught by the key press rules | they take a minute at the keyboard and are visible on screen |
 | Mass-storage or network BadUSB (USB Ethernet gadgets, fake drives with autorun-style tricks) | DuckyGuard only looks at keystrokes and keyboards | USB device policies, no auto-mount |

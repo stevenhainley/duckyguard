@@ -1,8 +1,8 @@
-# Homebrew cask for DuckyGuard 2.1.0. Publish in a tap (e.g. stevenhainley/homebrew-duckyguard)
+# Homebrew cask for DuckyGuard 2.2.0. Publish in a tap (e.g. stevenhainley/homebrew-duckyguard)
 # alongside the GitHub release: brew tap stevenhainley/duckyguard && brew install --cask duckyguard
 cask "duckyguard" do
-  version "2.1.0"
-  sha256 "72155807b2bac5ac6b29c73b5b6fa00bf97ae23f09640d4867276773e2bf4ea1"
+  version "2.2.0"
+  sha256 "eecdc382443261e197033eb3d0129f5d3f8698adb3e1d357a0e1a64cf339ff51"
 
   url "https://github.com/stevenhainley/duckyguard/releases/download/v#{version}/DuckyGuard-#{version}.dmg"
   name "DuckyGuard"

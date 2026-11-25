@@ -20,6 +20,7 @@ What this can and cannot do (honest version):
 from __future__ import annotations
 
 import functools
+import hashlib
 import json
 import os
 import plistlib
@@ -31,6 +32,23 @@ from typing import Callable, Dict, List, Optional, Set
 
 _DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 _MAJOR_BRANDS = {0x05AC: "apple", 0x046D: "logitech", 0x045E: "microsoft"}   # vendors that always name themselves
+
+
+def device_fingerprint(vendor_id: int, product_id: int, transport: str = "",
+                       manufacturer: str = "", product: str = "", serial: str = "") -> str:
+    """Deterministic SHA-256 digest over a keyboard's reported IOKit descriptor fields."""
+    norm_product = (product or "").strip().lower()
+    if norm_product == "unnamed keyboard":
+        norm_product = ""
+    raw = "|".join((
+        f"{int(vendor_id or 0):04x}",
+        f"{int(product_id or 0):04x}",
+        (transport or "").strip().lower(),
+        (manufacturer or "").strip().lower(),
+        norm_product,
+        (serial or "").strip(),
+    ))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 @functools.lru_cache(maxsize=None)
@@ -95,11 +113,19 @@ class Keyboard:
     vendor_note: str = ""
     duplicate: bool = False        # a second device with the same identity as one already connected
 
+    @property
+    def fingerprint(self) -> str:
+        return device_fingerprint(self.vendor_id, self.product_id, self.transport,
+                                  self.manufacturer, self.product, self.serial)
+
     def as_dict(self) -> dict:
         d = asdict(self)
+        fp = self.fingerprint
         d["vendor_hex"] = f"{self.vendor_id:04x}"
         d["product_hex"] = f"{self.product_id:04x}"
         d["vendor_name"] = vendor_name(self.vendor_id)
+        d["fingerprint"] = fp
+        d["fingerprint_short"] = fp[:12]
         return d
 
 
@@ -263,6 +289,8 @@ def identity_flags(kb: Keyboard, present: List[Keyboard], trusted: Dict[str, dic
     known = trusted.get(kb.key)
     if known and known.get("serial") and kb.serial and known["serial"] != kb.serial:
         flags.append("serial changed")                 # trusted name, different serial number
+    elif known and known.get("fingerprint") and kb.fingerprint != known["fingerprint"]:
+        flags.append("fingerprint mismatch")           # same lookup key, altered USB descriptor strings
     if kb.vendor_id and not kb.built_in:
         models = [(o.vendor_id, o.product_id) for o in present if o.key != kb.key and (o.built_in or o.key in trusted)]
         models += [(int(t.get("vendor_id", 0) or 0), int(t.get("product_id", 0) or 0)) for k, t in trusted.items() if k != kb.key]

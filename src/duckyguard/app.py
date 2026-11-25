@@ -137,6 +137,8 @@ class DuckyGuardApp(rumps.App):
         self.item_pause60 = rumps.MenuItem("Pause for 1 Hour", callback=lambda _s: self.pause(3600))
         self.item_pause = rumps.MenuItem("Pause Until I Resume", callback=lambda _s: self.pause(None))
         self.item_resume = rumps.MenuItem("Resume Protection", callback=lambda _s: self.resume())
+        self.item_lockdown = rumps.MenuItem("Lockdown External Keyboards", callback=self.menu_lockdown)
+        self.item_lockdown.state = bool(self.store.get("lockdown_mode"))
         self.item_quiet = rumps.MenuItem("Mute Alerts", callback=self.menu_quiet)
         self.item_quiet.state = bool(self.store.get("quiet_mode"))
         self.menu = [
@@ -147,6 +149,7 @@ class DuckyGuardApp(rumps.App):
             rumps.MenuItem("Open DuckyGuard", callback=self.menu_open),
             rumps.MenuItem("Run Safe Test", callback=self.menu_test),
             None,
+            self.item_lockdown,
             self.item_pause5,
             self.item_pause60,
             self.item_pause,
@@ -401,6 +404,11 @@ class DuckyGuardApp(rumps.App):
             self.engine.detector.score_software = bool(value)
         if key == "quiet_mode":
             self.item_quiet.state = bool(value)
+        if key == "lockdown_mode":
+            self.engine.set_lockdown(bool(value))
+            self.item_lockdown.state = bool(value)
+            self.refresh_menu()
+            return
         if key == "keep_alive" and launch_agent.is_enabled():
             try:
                 launch_agent.enable(keep_alive=bool(value))
@@ -559,6 +567,7 @@ class DuckyGuardApp(rumps.App):
             self._last_status = shown
             self.icon = _icon(shown)
         self.item_status.title = self.status_line()
+        self.item_lockdown.state = bool(self.store.get("lockdown_mode"))
         hold = e._hold
         name = ((hold or {}).get("keyboard") or {}).get("product") or "Keyboard"
         self.item_keep.title, self.item_allow.title = f"Keep “{name}” Blocked", f"Allow “{name}” Once"
@@ -601,6 +610,10 @@ class DuckyGuardApp(rumps.App):
 
     def menu_quiet(self, sender):
         self.set_setting("quiet_mode", not bool(self.store.get("quiet_mode")))
+
+    def menu_lockdown(self, _s):
+        self.set_setting("lockdown_mode", not bool(self.store.get("lockdown_mode")))
+        self.push_snapshot()
 
     def menu_quit(self, _s):
         try:
